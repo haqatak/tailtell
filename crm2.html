@@ -1,0 +1,3392 @@
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volunteer Call Manager</title>
+    <script src="https://unpkg.com/@instantdb/core"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4CAF50;
+            --primary-dark: #388E3C;
+            --secondary: #2196F3;
+            --danger: #f44336;
+            --warning: #ff9800;
+            --success: #4CAF50;
+            --gray-light: #f5f5f5;
+            --gray: #9e9e9e;
+            --gray-dark: #616161;
+            --text: #212121;
+            --bg: #ffffff;
+            --border: #e0e0e0;
+            --card-bg: #ffffff;
+            --modal-bg: #ffffff;
+        }
+
+        [data-theme="dark"] {
+            --primary: #66BB6A;
+            --primary-dark: #4CAF50;
+            --gray-light: #2c2c2c;
+            --gray: #9e9e9e;
+            --gray-dark: #bdbdbd;
+            --text: #e0e0e0;
+            --bg: #1a1a1a;
+            --border: #404040;
+            --card-bg: #242424;
+            --modal-bg: #2a2a2a;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--text);
+            transition: all 0.3s;
+        }
+
+        [data-theme="dark"] body {
+            background: linear-gradient(135deg, #434343 0%, #000000 100%);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Login Screen */
+        .login-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .login-card {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-card h2 {
+            margin-bottom: 30px;
+            text-align: center;
+            color: var(--primary-dark);
+        }
+
+        /* Main Dashboard */
+        .dashboard {
+            background: var(--bg);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            min-height: calc(100vh - 40px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .user-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            background: var(--gray-light);
+            padding: 5px;
+            gap: 5px;
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--gray-dark);
+            border-radius: 8px;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            background: rgba(0,0,0,0.05);
+        }
+
+        .nav-tab.active {
+            background: var(--bg);
+            color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .notification-badge {
+            background: var(--danger);
+            color: white;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 11px;
+            margin-left: 5px;
+        }
+
+        /* Content Area */
+        .content {
+            padding: 30px;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* Quick Stats Bar */
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .quick-stat {
+            text-align: center;
+        }
+
+        .quick-stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .quick-stat-label {
+            font-size: 13px;
+            color: var(--gray-dark);
+            margin-top: 5px;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.3s;
+            background: var(--card-bg);
+            color: var(--text);
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .quick-action-btn {
+            padding: 8px 16px;
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        .quick-action-btn:hover {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--gray-dark);
+            font-size: 14px;
+        }
+
+        .stat-trend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+
+        .trend-up {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .trend-down {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--gray-light);
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text);
+            border-bottom: 2px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: var(--gray-light);
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-failed, .status-noAnswer, .status-notInterested {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-followUp {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Tags */
+        .tag {
+            display: inline-block;
+            padding: 3px 8px;
+            background: var(--gray-light);
+            border-radius: 10px;
+            font-size: 12px;
+            margin-right: 5px;
+            color: var(--text);
+        }
+
+        .tag-primary {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--primary-dark);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--modal-bg);
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            color: var(--primary-dark);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--gray);
+        }
+
+        /* Search and Filter */
+        .search-filter-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        /* Activity Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 20px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 5px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 2px solid var(--bg);
+        }
+
+        .timeline-content {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .timeline-date {
+            font-size: 12px;
+            color: var(--gray);
+            margin-bottom: 5px;
+        }
+
+        /* Notification Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--card-bg);
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 2000;
+            animation: slideInRight 0.3s;
+            max-width: 350px;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .toast.warning {
+            border-left: 4px solid var(--warning);
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid var(--gray-light);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Calendar View */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .calendar-day {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 80px;
+            position: relative;
+        }
+
+        .calendar-day-header {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .calendar-event {
+            background: rgba(76, 175, 80, 0.2);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-top: 2px;
+            cursor: pointer;
+        }
+
+        /* Performance Chart */
+        .chart-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--gray-dark);
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: var(--gray);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        /* Action buttons in tables */
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            color: var(--primary);
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            color: var(--primary-dark);
+            transform: scale(1.2);
+        }
+
+        /* Batch Actions Bar */
+        .batch-actions {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            animation: slideDown 0.3s;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Checkbox */
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        /* Scripts Section */
+        .script-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .script-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .script-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--primary-dark);
+        }
+
+        .script-content {
+            color: var(--gray-dark);
+            line-height: 1.6;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 15px;
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-tabs {
+                overflow-x: auto;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 14px;
+            }
+
+            th, td {
+                padding: 10px;
+            }
+
+            .user-info {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .quick-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+            }
+
+            .header, .nav-tabs, .btn, .action-btn {
+                display: none;
+            }
+
+            .dashboard {
+                box-shadow: none;
+            }
+        }
+
+        /* Keyboard Shortcuts Hint */
+        .kbd {
+            background: var(--gray-light);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .shortcuts-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: var(--card-bg);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--gray-dark);
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <h2>📞 Volunteer Call Manager</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" required placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required placeholder="Enter your password">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+            </form>
+            <p style="text-align: center; margin-top: 20px; color: var(--gray);">
+                Demo accounts:<br>
+                admin@org.com / admin123<br>
+                manager@org.com / manager123<br>
+                volunteer@org.com / volunteer123
+            </p>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="container" style="display: none;">
+        <div class="dashboard">
+            <div class="header">
+                <h1>📞 Volunteer Call Manager</h1>
+                <div class="user-info">
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+                    <span id="userName">Loading...</span>
+                    <span class="user-badge" id="userRole">User</span>
+                    <button class="btn btn-outline" onclick="logout()" style="background: rgba(255,255,255,0.2); border-color: white; color: white;">Logout</button>
+                </div>
+            </div>
+
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="switchTab('home')">
+                    Dashboard
+                    <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                </button>
+                <button class="nav-tab" onclick="switchTab('calls')">My Calls</button>
+                <button class="nav-tab" onclick="switchTab('contacts')" id="contactsTab">Contacts</button>
+                <button class="nav-tab" onclick="switchTab('scripts')" id="scriptsTab">Call Scripts</button>
+                <button class="nav-tab" onclick="switchTab('calendar')">Calendar</button>
+                <button class="nav-tab" onclick="switchTab('team')" id="teamTab">Team</button>
+                <button class="nav-tab" onclick="switchTab('users')" id="usersTab">Users</button>
+                <button class="nav-tab" onclick="switchTab('reports')">Reports</button>
+            </div>
+
+            <div class="content">
+                <!-- Dashboard/Home Section -->
+                <div id="home" class="content-section active">
+                    <h2 style="margin-bottom: 20px;">Welcome back, <span id="welcomeName">User</span>!</h2>
+                    
+                    <!-- Quick Stats for User -->
+                    <div class="quick-stats">
+                        <div class="quick-stat">
+                            <div class="quick-stat-value" id="todaysCalls">0</div>
+                            <div class="quick-stat-label">Today's Calls</div>
+                        </div>
+                        <div class="quick-stat">
+                            <div class="quick-stat-value" id="weekCalls">0</div>
+                            <div class="quick-stat-label">This Week</div>
+                        </div>
+                        <div class="quick-stat">
+                            <div class="quick-stat-value" id="mySuccessRate">0%</div>
+                            <div class="quick-stat-label">Success Rate</div>
+                        </div>
+                        <div class="quick-stat">
+                            <div class="quick-stat-value" id="pendingFollowups">0</div>
+                            <div class="quick-stat-label">Follow-ups Due</div>
+                        </div>
+                        <div class="quick-stat">
+                            <div class="quick-stat-value" id="assignedContacts">0</div>
+                            <div class="quick-stat-label">Assigned Contacts</div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <h3 style="margin: 25px 0 15px;">Quick Actions</h3>
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" onclick="showCallModal()">📞 Log New Call</button>
+                        <button class="quick-action-btn" onclick="showQuickCallModal()">⚡ Quick Call (No Answer)</button>
+                        <button class="quick-action-btn" onclick="viewFollowUps()">📅 View Follow-ups</button>
+                        <button class="quick-action-btn" onclick="exportMyCalls()">📥 Export My Calls</button>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <h3 style="margin: 25px 0 15px;">Recent Activity</h3>
+                    <div class="timeline" id="recentActivity">
+                        <!-- Activity items will be loaded here -->
+                    </div>
+
+                    <!-- Upcoming Follow-ups -->
+                    <h3 style="margin: 25px 0 15px;">Upcoming Follow-ups</h3>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Contact</th>
+                                    <th>Phone</th>
+                                    <th>Follow-up Date</th>
+                                    <th>Last Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="upcomingFollowupsBody">
+                                <!-- Follow-ups will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- My Calls Section -->
+                <div id="calls" class="content-section">
+                    <div class="search-filter-bar">
+                        <input type="text" class="search-input" placeholder="Search calls..." id="callSearch">
+                        <select id="callStatusFilter">
+                            <option value="">All Status</option>
+                            <option value="completed">Completed</option>
+                            <option value="no-answer">No Answer</option>
+                            <option value="follow-up">Needs Follow-up</option>
+                            <option value="not-interested">Not Interested</option>
+                        </select>
+                        <input type="date" id="callDateFilter" title="Filter by date">
+                        <button class="btn btn-primary" onclick="showCallModal()">+ Log Call</button>
+                        <button class="btn btn-secondary" onclick="exportMyCalls()">📥 Export</button>
+                    </div>
+
+                    <!-- Batch Actions (hidden by default) -->
+                    <div class="batch-actions" id="batchActions" style="display: none;">
+                        <span><span id="selectedCount">0</span> calls selected</span>
+                        <div>
+                            <button class="btn" style="background: white; color: var(--primary);" onclick="batchUpdateStatus()">Update Status</button>
+                            <button class="btn btn-danger" onclick="batchDelete()">Delete Selected</button>
+                            <button class="btn btn-outline" style="border-color: white; color: white;" onclick="clearSelection()">Clear</button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table id="callsTable">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" class="checkbox" id="selectAllCalls"></th>
+                                    <th>Contact</th>
+                                    <th>Phone</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Duration</th>
+                                    <th>Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="callsTableBody">
+                                <!-- Calls will be loaded here -->
+                            </tbody>
+                        </table>
+                        <div class="empty-state" id="callsEmpty" style="display: none;">
+                            <div class="empty-state-icon">📞</div>
+                            <h3>No calls yet</h3>
+                            <p>Start making calls and log them here!</p>
+                            <button class="btn btn-primary" onclick="showCallModal()">Log Your First Call</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contacts Section -->
+                <div id="contacts" class="content-section">
+                    <div class="search-filter-bar">
+                        <input type="text" class="search-input" placeholder="Search contacts..." id="contactSearch">
+                        <select id="contactAssignFilter">
+                            <option value="">All Contacts</option>
+                            <option value="unassigned">Unassigned</option>
+                            <option value="assigned">Assigned</option>
+                        </select>
+                        <select id="contactTagFilter">
+                            <option value="">All Tags</option>
+                            <option value="high-priority">High Priority</option>
+                            <option value="interested">Interested</option>
+                            <option value="callback">Callback Requested</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="showContactModal()">+ Add Contact</button>
+                        <button class="btn btn-secondary" onclick="showBulkUploadModal()">📤 Bulk Upload</button>
+                        <button class="btn btn-warning" onclick="showBatchAssignModal()">👥 Batch Assign</button>
+                    </div>
+
+                    <div class="table-container">
+                        <table id="contactsTable">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" class="checkbox" id="selectAllContacts"></th>
+                                    <th>Name</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>Tags</th>
+                                    <th>Assigned To</th>
+                                    <th>Last Called</th>
+                                    <th>Call Count</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contactsTableBody">
+                                <!-- Contacts will be loaded here -->
+                            </tbody>
+                        </table>
+                        <div class="empty-state" id="contactsEmpty" style="display: none;">
+                            <div class="empty-state-icon">👥</div>
+                            <h3>No contacts yet</h3>
+                            <p>Add contacts to start calling!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Call Scripts Section -->
+                <div id="scripts" class="content-section">
+                    <h2 style="margin-bottom: 20px;">Call Scripts & Templates</h2>
+                    <div id="scriptsList">
+                        <div class="script-card" onclick="viewScript('intro')">
+                            <div class="script-title">📋 Introduction Script</div>
+                            <div class="script-content">Standard introduction for first-time calls to potential volunteers...</div>
+                        </div>
+                        <div class="script-card" onclick="viewScript('followup')">
+                            <div class="script-title">🔄 Follow-up Script</div>
+                            <div class="script-content">Template for following up with interested volunteers...</div>
+                        </div>
+                        <div class="script-card" onclick="viewScript('objection')">
+                            <div class="script-title">💬 Common Objections</div>
+                            <div class="script-content">Responses to common concerns and objections...</div>
+                        </div>
+                        <div class="script-card" onclick="viewScript('closing')">
+                            <div class="script-title">✅ Closing Script</div>
+                            <div class="script-content">How to successfully close and get commitment...</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="showScriptModal()" style="margin-top: 20px;">+ Add Custom Script</button>
+                </div>
+
+                <!-- Calendar Section -->
+                <div id="calendar" class="content-section">
+                    <h2 style="margin-bottom: 20px;">Follow-up Calendar</h2>
+                    <div class="calendar-controls" style="margin-bottom: 20px;">
+                        <button class="btn btn-outline" onclick="previousMonth()">← Previous</button>
+                        <span id="currentMonth" style="margin: 0 20px; font-weight: 600;"></span>
+                        <button class="btn btn-outline" onclick="nextMonth()">Next →</button>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- Calendar will be generated here -->
+                    </div>
+                </div>
+
+                <!-- Team Section -->
+                <div id="team" class="content-section">
+                    <h2 style="margin-bottom: 20px;">Team Performance</h2>
+                    
+                    <!-- Team Performance Goals -->
+                    <div class="stats-grid" style="margin-bottom: 30px;">
+                        <div class="stat-card">
+                            <span class="stat-trend trend-up">↑ 12%</span>
+                            <div class="stat-value" id="teamTotalCalls">0</div>
+                            <div class="stat-label">Total Team Calls</div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-trend trend-up">↑ 5%</span>
+                            <div class="stat-value" id="teamSuccessRate">0%</div>
+                            <div class="stat-label">Team Success Rate</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="teamAvgDuration">0m</div>
+                            <div class="stat-label">Avg Call Duration</div>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-trend trend-down">↓ 3</span>
+                            <div class="stat-value" id="teamPendingFollowups">0</div>
+                            <div class="stat-label">Pending Follow-ups</div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Chart -->
+                    <div class="chart-container">
+                        <h3>Weekly Performance Trend</h3>
+                        <canvas id="performanceChart" height="300"></canvas>
+                    </div>
+
+                    <h3 style="margin: 30px 0 20px;">Team Leaderboard</h3>
+                    <div class="table-container">
+                        <table id="teamTable">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Volunteer</th>
+                                    <th>Total Calls</th>
+                                    <th>Successful</th>
+                                    <th>Success Rate</th>
+                                    <th>Avg Duration</th>
+                                    <th>Points</th>
+                                    <th>Last Active</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teamTableBody">
+                                <!-- Team data will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Users Section -->
+                <div id="users" class="content-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2>User Management</h2>
+                        <button class="btn btn-primary" onclick="showUserModal()">+ Add User</button>
+                    </div>
+
+                    <div class="table-container">
+                        <table id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Calls Made</th>
+                                    <th>Last Login</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <!-- Users will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Reports Section -->
+                <div id="reports" class="content-section">
+                    <h2 style="margin-bottom: 20px;">Reports & Analytics</h2>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalCalls">0</div>
+                            <div class="stat-label">Total Calls (All Time)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalContacts">0</div>
+                            <div class="stat-label">Total Contacts</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="conversionRate">0%</div>
+                            <div class="stat-label">Conversion Rate</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="activeVolunteers">0</div>
+                            <div class="stat-label">Active Volunteers</div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <h3>Call Distribution by Status</h3>
+                        <canvas id="statusChart" height="300"></canvas>
+                    </div>
+
+                    <h3 style="margin: 30px 0 20px;">Export Reports</h3>
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" onclick="exportFullReport()">📊 Full Report (CSV)</button>
+                        <button class="quick-action-btn" onclick="exportContactsReport()">👥 Contacts Report</button>
+                        <button class="quick-action-btn" onclick="exportCallsReport()">📞 Calls Report</button>
+                        <button class="quick-action-btn" onclick="exportTeamReport()">👨‍👩‍👧‍👦 Team Performance</button>
+                        <button class="quick-action-btn" onclick="printReport()">🖨️ Print Summary</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Call Modal -->
+    <div id="callModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="callModalTitle">Log Call</h3>
+                <button class="close-btn" onclick="closeModal('callModal')">&times;</button>
+            </div>
+            <form id="callForm">
+                <input type="hidden" id="callId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="callContact">Contact *</label>
+                        <select id="callContact" required>
+                            <option value="">Select contact...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="callStatus">Status *</label>
+                        <select id="callStatus" required>
+                            <option value="completed">Completed - Successful</option>
+                            <option value="no-answer">No Answer</option>
+                            <option value="busy">Busy</option>
+                            <option value="wrong-number">Wrong Number</option>
+                            <option value="follow-up">Needs Follow-up</option>
+                            <option value="not-interested">Not Interested</option>
+                            <option value="callback">Callback Requested</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="callDuration">Duration (minutes)</label>
+                        <input type="number" id="callDuration" min="0" placeholder="e.g., 5">
+                    </div>
+                    <div class="form-group">
+                        <label for="followUpDate">Follow-up Date</label>
+                        <input type="date" id="followUpDate">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="callNotes">Notes</label>
+                    <textarea id="callNotes" placeholder="Call details, next steps, volunteer interests, availability..."></textarea>
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Save Call</button>
+                    <button type="button" class="btn btn-outline" onclick="closeModal('callModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick Call Modal -->
+    <div id="quickCallModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Quick Call Log</h3>
+                <button class="close-btn" onclick="closeModal('quickCallModal')">&times;</button>
+            </div>
+            <form id="quickCallForm">
+                <div class="form-group">
+                    <label for="quickCallContacts">Select Contacts (No Answer)</label>
+                    <div id="quickCallContactsList" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 10px;">
+                        <!-- Contacts checkboxes will be loaded here -->
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Log Selected as No Answer</button>
+                    <button type="button" class="btn btn-outline" onclick="closeModal('quickCallModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contact Modal -->
+    <div id="contactModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="contactModalTitle">Add Contact</h3>
+                <button class="close-btn" onclick="closeModal('contactModal')">&times;</button>
+            </div>
+            <form id="contactForm">
+                <input type="hidden" id="contactId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="contactName">Name *</label>
+                        <input type="text" id="contactName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactPhone">Phone *</label>
+                        <input type="tel" id="contactPhone" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="contactEmail">Email</label>
+                        <input type="email" id="contactEmail">
+                    </div>
+                    <div class="form-group">
+                        <label for="assignTo">Assign To</label>
+                        <select id="assignTo">
+                            <option value="">Unassigned</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="contactTags">Tags</label>
+                    <select id="contactTags" multiple style="height: 80px;">
+                        <option value="high-priority">High Priority</option>
+                        <option value="interested">Interested</option>
+                        <option value="callback">Callback Requested</option>
+                        <option value="morning">Morning Availability</option>
+                        <option value="evening">Evening Availability</option>
+                        <option value="weekend">Weekend Availability</option>
+                    </select>
+                    <small style="color: var(--gray);">Hold Ctrl/Cmd to select multiple</small>
+                </div>
+                <div class="form-group">
+                    <label for="contactNotes">Notes</label>
+                    <textarea id="contactNotes" placeholder="Any relevant information, preferences, availability..."></textarea>
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Save Contact</button>
+                    <button type="button" class="btn btn-outline" onclick="closeModal('contactModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Batch Assign Modal -->
+    <div id="batchAssignModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Batch Assign Contacts</h3>
+                <button class="close-btn" onclick="closeModal('batchAssignModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Assignment Method</label>
+                <select id="assignMethod" onchange="updateAssignUI()">
+                    <option value="equal">Distribute Equally</option>
+                    <option value="specific">Assign to Specific User</option>
+                    <option value="round-robin">Round Robin</option>
+                </select>
+            </div>
+            <div class="form-group" id="specificUserGroup" style="display: none;">
+                <label>Select User</label>
+                <select id="batchAssignUser">
+                    <!-- Users will be loaded here -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Number of Unassigned Contacts: <span id="unassignedCount">0</span></label>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="processBatchAssign()">Assign Contacts</button>
+                <button class="btn btn-outline" onclick="closeModal('batchAssignModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Modal -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add User</h3>
+                <button class="close-btn" onclick="closeModal('userModal')">&times;</button>
+            </div>
+            <form id="userForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="userNameInput">Name *</label>
+                        <input type="text" id="userNameInput" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="userEmail">Email *</label>
+                        <input type="email" id="userEmail" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="userPassword">Password *</label>
+                        <input type="password" id="userPassword" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="userRoleSelect">Role *</label>
+                        <select id="userRoleSelect" required>
+                            <option value="user">User (Volunteer)</option>
+                            <option value="manager">Manager</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="userGoal">Monthly Call Goal</label>
+                    <input type="number" id="userGoal" min="0" placeholder="e.g., 100">
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Create User</button>
+                    <button type="button" class="btn btn-outline" onclick="closeModal('userModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Upload Modal -->
+    <div id="bulkUploadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Bulk Upload Contacts</h3>
+                <button class="close-btn" onclick="closeModal('bulkUploadModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>CSV Format</label>
+                <p style="color: var(--gray-dark); font-size: 14px; margin-bottom: 10px;">
+                    Upload a CSV file with columns: Name, Phone, Email (optional), Notes (optional), Tags (optional)
+                </p>
+                <textarea readonly style="font-family: monospace; font-size: 12px; background: var(--gray-light);">Name,Phone,Email,Notes,Tags
+John Doe,555-0101,john@email.com,Interested in weekend shifts,interested;weekend
+Jane Smith,555-0102,,Available mornings only,morning;high-priority</textarea>
+            </div>
+            <div class="form-group">
+                <label for="csvFile">Select CSV File</label>
+                <input type="file" id="csvFile" accept=".csv">
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="skipDuplicates" checked>
+                    Skip duplicate phone numbers
+                </label>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="processBulkUpload()">Upload</button>
+                <button type="button" class="btn btn-outline" onclick="closeModal('bulkUploadModal')">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script View Modal -->
+    <div id="scriptViewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="scriptTitle">Call Script</h3>
+                <button class="close-btn" onclick="closeModal('scriptViewModal')">&times;</button>
+            </div>
+            <div id="scriptContent" style="line-height: 1.8; white-space: pre-wrap;">
+                <!-- Script content will be loaded here -->
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="copyScript()">📋 Copy to Clipboard</button>
+                <button class="btn btn-outline" onclick="closeModal('scriptViewModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Hint -->
+    <div class="shortcuts-hint" id="shortcutsHint">
+        Press <kbd>?</kbd> for keyboard shortcuts
+    </div>
+
+    <script>
+        // InstantDB Configuration
+        const APP_ID = 'volunteer-call-manager-' + Math.random().toString(36).substring(7);
+        const db = {}//window.instantdb.init({ appId: APP_ID });
+
+        // Global State
+        let currentUser = null;
+        let users = [];
+        let contacts = [];
+        let calls = [];
+        let scripts = [];
+        let selectedCalls = new Set();
+        let selectedContacts = new Set();
+        let currentMonth = new Date();
+
+        // Initialize Demo Data
+        function initializeDemoData() {
+            // Check if data already exists
+            const existingUsers = localStorage.getItem('vcm_users');
+            if (!existingUsers) {
+                // Create demo users
+                const demoUsers = [
+                    {
+                        id: generateId(),
+                        name: 'Admin User',
+                        email: 'admin@org.com',
+                        password: btoa('admin123'),
+                        role: 'admin',
+                        createdAt: new Date().toISOString(),
+                        lastLogin: new Date().toISOString(),
+                        active: true,
+                        monthlyGoal: 150
+                    },
+                    {
+                        id: generateId(),
+                        name: 'Manager Mike',
+                        email: 'manager@org.com',
+                        password: btoa('manager123'),
+                        role: 'manager',
+                        createdAt: new Date().toISOString(),
+                        lastLogin: new Date(Date.now() - 86400000).toISOString(),
+                        active: true,
+                        monthlyGoal: 200
+                    },
+                    {
+                        id: generateId(),
+                        name: 'Volunteer Sarah',
+                        email: 'volunteer@org.com',
+                        password: btoa('volunteer123'),
+                        role: 'user',
+                        createdAt: new Date().toISOString(),
+                        lastLogin: new Date().toISOString(),
+                        active: true,
+                        monthlyGoal: 100
+                    }
+                ];
+
+                // Create demo contacts
+                const demoContacts = [
+                    {
+                        id: generateId(),
+                        name: 'Alice Johnson',
+                        phone: '555-0101',
+                        email: 'alice@email.com',
+                        notes: 'Interested in weekend volunteering',
+                        assignedTo: demoUsers[2].id,
+                        tags: ['interested', 'weekend'],
+                        status: 'active',
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        id: generateId(),
+                        name: 'Bob Smith',
+                        phone: '555-0102',
+                        email: 'bob@email.com',
+                        notes: 'Available for morning shifts',
+                        assignedTo: demoUsers[2].id,
+                        tags: ['morning', 'high-priority'],
+                        status: 'active',
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        id: generateId(),
+                        name: 'Carol White',
+                        phone: '555-0103',
+                        email: '',
+                        notes: 'Prefers email communication',
+                        assignedTo: null,
+                        tags: ['callback'],
+                        status: 'active',
+                        createdAt: new Date().toISOString()
+                    }
+                ];
+
+                // Create demo calls
+                const demoCalls = [
+                    {
+                        id: generateId(),
+                        contactId: demoContacts[0].id,
+                        userId: demoUsers[2].id,
+                        status: 'completed',
+                        duration: 5,
+                        notes: 'Great conversation, very enthusiastic about helping',
+                        callDate: new Date().toISOString(),
+                        followUpDate: null
+                    },
+                    {
+                        id: generateId(),
+                        contactId: demoContacts[1].id,
+                        userId: demoUsers[2].id,
+                        status: 'follow-up',
+                        duration: 3,
+                        notes: 'Left voicemail, will try again tomorrow',
+                        callDate: new Date(Date.now() - 86400000).toISOString(),
+                        followUpDate: new Date(Date.now() + 86400000).toISOString()
+                    }
+                ];
+
+                // Create demo scripts
+                const demoScripts = [
+                    {
+                        id: 'intro',
+                        title: 'Introduction Script',
+                        content: `Hello, is this [Contact Name]?
+
+Hi [Contact Name], my name is [Your Name] and I'm calling from [Organization Name]. We got your contact information from [Source] indicating you might be interested in volunteering with us.
+
+Do you have a few minutes to talk about volunteer opportunities?
+
+[If YES]
+Great! We're currently looking for volunteers to help with [specific activities]. The time commitment is typically [hours per week/month], and we're very flexible with scheduling.
+
+What kind of volunteer work interests you most?
+
+[Listen and respond to their interests]
+
+[If NO]
+No problem! Would there be a better time I could call you back? Or if you prefer, I can send you an email with more information.`
+                    },
+                    {
+                        id: 'followup',
+                        title: 'Follow-up Script',
+                        content: `Hi [Contact Name], this is [Your Name] from [Organization Name]. We spoke [timeframe] about volunteer opportunities.
+
+I wanted to follow up and see if you had any questions or if you're ready to get started with volunteering?
+
+[Listen to response]
+
+[If interested]
+Wonderful! The next step would be to schedule an orientation session. We have sessions on [days/times]. Which would work best for you?
+
+[If unsure]
+That's completely understandable. What questions or concerns can I address for you?`
+                    }
+                ];
+
+                // Save to localStorage
+                localStorage.setItem('vcm_users', JSON.stringify(demoUsers));
+                localStorage.setItem('vcm_contacts', JSON.stringify(demoContacts));
+                localStorage.setItem('vcm_calls', JSON.stringify(demoCalls));
+                localStorage.setItem('vcm_scripts', JSON.stringify(demoScripts));
+            }
+
+            // Load data from localStorage
+            users = JSON.parse(localStorage.getItem('vcm_users') || '[]');
+            contacts = JSON.parse(localStorage.getItem('vcm_contacts') || '[]');
+            calls = JSON.parse(localStorage.getItem('vcm_calls') || '[]');
+            scripts = JSON.parse(localStorage.getItem('vcm_scripts') || '[]');
+        }
+
+        // Helper Functions
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substring(2);
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('vcm_users', JSON.stringify(users));
+            localStorage.setItem('vcm_contacts', JSON.stringify(contacts));
+            localStorage.setItem('vcm_calls', JSON.stringify(calls));
+            localStorage.setItem('vcm_scripts', JSON.stringify(scripts));
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span>${type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️'}</span>
+                <span>${message}</span>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOutRight 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Theme Management
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('vcm_theme', newTheme);
+            
+            const themeToggle = document.querySelector('.theme-toggle');
+            themeToggle.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+        }
+
+        // Authentication
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const user = users.find(u => u.email === email && u.password === btoa(password));
+            
+            if (user) {
+                if (!user.active) {
+                    showToast('Your account has been deactivated. Contact an admin.', 'error');
+                    return;
+                }
+                
+                currentUser = user;
+                user.lastLogin = new Date().toISOString();
+                saveToLocalStorage();
+                localStorage.setItem('vcm_currentUser', JSON.stringify(user));
+                showDashboard();
+                showToast(`Welcome back, ${user.name}!`);
+            } else {
+                showToast('Invalid credentials. Please try again.', 'error');
+            }
+        });
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('vcm_currentUser');
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('dashboard').style.display = 'none';
+            showToast('Logged out successfully');
+        }
+
+        function showDashboard() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            
+            // Update user info
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userRole').textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+            document.getElementById('welcomeName').textContent = currentUser.name;
+            
+            // Show/hide tabs based on role
+            updateTabVisibility();
+            
+            // Load initial data
+            loadDashboard();
+            loadCalls();
+            loadContacts();
+            loadCalendar();
+            updateNotifications();
+            
+            if (currentUser.role === 'manager' || currentUser.role === 'admin') {
+                loadTeamData();
+            }
+            
+            if (currentUser.role === 'admin') {
+                loadUsers();
+            }
+            
+            loadReports();
+        }
+
+        function updateTabVisibility() {
+            const contactsTab = document.getElementById('contactsTab');
+            const teamTab = document.getElementById('teamTab');
+            const usersTab = document.getElementById('usersTab');
+            const scriptsTab = document.getElementById('scriptsTab');
+            
+            // Everyone can see scripts
+            scriptsTab.style.display = 'block';
+            
+            // Contacts - visible to managers and admins
+            contactsTab.style.display = (currentUser.role === 'manager' || currentUser.role === 'admin') ? 'block' : 'none';
+            
+            // Team - visible to managers and admins
+            teamTab.style.display = (currentUser.role === 'manager' || currentUser.role === 'admin') ? 'block' : 'none';
+            
+            // Users - visible to admins only
+            usersTab.style.display = currentUser.role === 'admin' ? 'block' : 'none';
+        }
+
+        function updateNotifications() {
+            // Count pending follow-ups
+            const followUps = calls.filter(c => 
+                c.userId === currentUser.id && 
+                c.followUpDate && 
+                new Date(c.followUpDate) <= new Date()
+            );
+            
+            const badge = document.getElementById('notificationBadge');
+            if (followUps.length > 0) {
+                badge.textContent = followUps.length;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // Tab Switching
+        function switchTab(tabName) {
+            // Update nav tabs
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update content sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            
+            // Load data for the selected tab
+            switch(tabName) {
+                case 'home':
+                    loadDashboard();
+                    break;
+                case 'calls':
+                    loadCalls();
+                    break;
+                case 'contacts':
+                    loadContacts();
+                    break;
+                case 'scripts':
+                    loadScripts();
+                    break;
+                case 'calendar':
+                    loadCalendar();
+                    break;
+                case 'team':
+                    loadTeamData();
+                    break;
+                case 'users':
+                    loadUsers();
+                    break;
+                case 'reports':
+                    loadReports();
+                    break;
+            }
+        }
+
+        // Dashboard Functions
+        function loadDashboard() {
+            // Calculate user stats
+            const userCalls = calls.filter(c => c.userId === currentUser.id);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const todaysCalls = userCalls.filter(c => {
+                const callDate = new Date(c.callDate);
+                callDate.setHours(0, 0, 0, 0);
+                return callDate.getTime() === today.getTime();
+            });
+            
+            const weekStart = new Date(today);
+            weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+            const weekCalls = userCalls.filter(c => new Date(c.callDate) >= weekStart);
+            
+            const successfulCalls = userCalls.filter(c => c.status === 'completed').length;
+            const successRate = userCalls.length > 0 ? Math.round((successfulCalls / userCalls.length) * 100) : 0;
+            
+            const pendingFollowups = userCalls.filter(c => 
+                c.followUpDate && new Date(c.followUpDate) >= new Date()
+            ).length;
+            
+            const assignedContacts = contacts.filter(c => c.assignedTo === currentUser.id).length;
+            
+            // Update stats
+            document.getElementById('todaysCalls').textContent = todaysCalls.length;
+            document.getElementById('weekCalls').textContent = weekCalls.length;
+            document.getElementById('mySuccessRate').textContent = successRate + '%';
+            document.getElementById('pendingFollowups').textContent = pendingFollowups;
+            document.getElementById('assignedContacts').textContent = assignedContacts;
+            
+            // Load recent activity
+            loadRecentActivity();
+            
+            // Load upcoming follow-ups
+            loadUpcomingFollowups();
+        }
+
+        function loadRecentActivity() {
+            const recentCalls = calls
+                .filter(c => c.userId === currentUser.id)
+                .sort((a, b) => new Date(b.callDate) - new Date(a.callDate))
+                .slice(0, 5);
+            
+            const activityHTML = recentCalls.map(call => {
+                const contact = contacts.find(c => c.id === call.contactId);
+                return `
+                    <div class="timeline-item">
+                        <div class="timeline-content">
+                            <div class="timeline-date">${formatDateTime(call.callDate)}</div>
+                            <div>Called <strong>${contact?.name || 'Unknown'}</strong> - ${formatStatus(call.status)}</div>
+                            ${call.notes ? `<div style="font-size: 14px; color: var(--gray-dark); margin-top: 5px;">${call.notes}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('recentActivity').innerHTML = activityHTML || '<p style="color: var(--gray);">No recent activity</p>';
+        }
+
+        function loadUpcomingFollowups() {
+            const followUps = calls
+                .filter(c => c.userId === currentUser.id && c.followUpDate)
+                .sort((a, b) => new Date(a.followUpDate) - new Date(b.followUpDate))
+                .slice(0, 5);
+            
+            const tbody = document.getElementById('upcomingFollowupsBody');
+            
+            if (followUps.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--gray);">No upcoming follow-ups</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = followUps.map(call => {
+                const contact = contacts.find(c => c.id === call.contactId);
+                const isOverdue = new Date(call.followUpDate) < new Date();
+                
+                return `
+                    <tr>
+                        <td>${contact?.name || 'Unknown'}</td>
+                        <td>${contact?.phone || 'N/A'}</td>
+                        <td>
+                            <span style="color: ${isOverdue ? 'var(--danger)' : 'var(--text)'};">
+                                ${formatDate(call.followUpDate)} ${isOverdue ? '(Overdue)' : ''}
+                            </span>
+                        </td>
+                        <td>${call.notes || '-'}</td>
+                        <td>
+                            <button class="action-btn" onclick="callContact('${call.contactId}')">📞</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Load Functions
+        function loadCalls() {
+            const tbody = document.getElementById('callsTableBody');
+            const emptyState = document.getElementById('callsEmpty');
+            
+            // Filter calls based on user role
+            let userCalls = calls;
+            if (currentUser.role === 'user') {
+                userCalls = calls.filter(call => call.userId === currentUser.id);
+            }
+            
+            if (userCalls.length === 0) {
+                tbody.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            tbody.style.display = 'table-row-group';
+            emptyState.style.display = 'none';
+            
+            // Sort by date (newest first)
+            userCalls.sort((a, b) => new Date(b.callDate) - new Date(a.callDate));
+            
+            tbody.innerHTML = userCalls.map(call => {
+                const contact = contacts.find(c => c.id === call.contactId) || {};
+                const statusClass = getStatusClass(call.status);
+                
+                return `
+                    <tr>
+                        <td><input type="checkbox" class="checkbox call-checkbox" data-id="${call.id}"></td>
+                        <td>${contact.name || 'Unknown'}</td>
+                        <td>${contact.phone || 'N/A'}</td>
+                        <td><span class="status-badge ${statusClass}">${formatStatus(call.status)}</span></td>
+                        <td>${formatDate(call.callDate)}</td>
+                        <td>${call.duration || 0} min</td>
+                        <td>${call.notes || '-'}</td>
+                        <td>
+                            <button class="action-btn" onclick="editCall('${call.id}')">✏️</button>
+                            <button class="action-btn" onclick="deleteCall('${call.id}')" style="color: var(--danger);">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Add checkbox listeners
+            document.querySelectorAll('.call-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        selectedCalls.add(this.dataset.id);
+                    } else {
+                        selectedCalls.delete(this.dataset.id);
+                    }
+                    updateBatchActions();
+                });
+            });
+        }
+
+        function loadContacts() {
+            const tbody = document.getElementById('contactsTableBody');
+            const emptyState = document.getElementById('contactsEmpty');
+            const assignSelect = document.getElementById('assignTo');
+            
+            if (contacts.length === 0) {
+                tbody.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            tbody.style.display = 'table-row-group';
+            emptyState.style.display = 'none';
+            
+            // Update assign dropdown
+            const volunteers = users.filter(u => u.role === 'user');
+            assignSelect.innerHTML = '<option value="">Unassigned</option>' + 
+                volunteers.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+            
+            // Update batch assign dropdown
+            const batchAssignUser = document.getElementById('batchAssignUser');
+            batchAssignUser.innerHTML = volunteers.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+            
+            // Update unassigned count
+            const unassignedCount = contacts.filter(c => !c.assignedTo).length;
+            document.getElementById('unassignedCount').textContent = unassignedCount;
+            
+            tbody.innerHTML = contacts.map(contact => {
+                const assignedUser = users.find(u => u.id === contact.assignedTo);
+                const contactCalls = calls.filter(c => c.contactId === contact.id);
+                const lastCall = contactCalls.sort((a, b) => new Date(b.callDate) - new Date(a.callDate))[0];
+                const callCount = contactCalls.length;
+                
+                const tags = (contact.tags || []).map(tag => 
+                    `<span class="tag tag-primary">${tag}</span>`
+                ).join('');
+                
+                return `
+                    <tr>
+                        <td><input type="checkbox" class="checkbox contact-checkbox" data-id="${contact.id}"></td>
+                        <td>${contact.name}</td>
+                        <td>${contact.phone}</td>
+                        <td>${contact.email || '-'}</td>
+                        <td>${tags || '-'}</td>
+                        <td>${assignedUser ? assignedUser.name : 'Unassigned'}</td>
+                        <td>${lastCall ? formatDate(lastCall.callDate) : 'Never'}</td>
+                        <td>${callCount}</td>
+                        <td>
+                            <button class="action-btn" onclick="callContact('${contact.id}')" title="Call">📞</button>
+                            <button class="action-btn" onclick="viewContactHistory('${contact.id}')" title="History">📊</button>
+                            <button class="action-btn" onclick="editContact('${contact.id}')" title="Edit">✏️</button>
+                            <button class="action-btn" onclick="deleteContact('${contact.id}')" style="color: var(--danger);" title="Delete">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Update call contact dropdown
+            const callContactSelect = document.getElementById('callContact');
+            let availableContacts = contacts;
+            
+            if (currentUser.role === 'user') {
+                availableContacts = contacts.filter(c => c.assignedTo === currentUser.id);
+            }
+            
+            callContactSelect.innerHTML = '<option value="">Select contact...</option>' +
+                availableContacts.map(c => `<option value="${c.id}">${c.name} - ${c.phone}</option>`).join('');
+            
+            // Update quick call contacts list
+            const quickCallList = document.getElementById('quickCallContactsList');
+            quickCallList.innerHTML = availableContacts.map(c => `
+                <label style="display: block; padding: 5px;">
+                    <input type="checkbox" value="${c.id}" style="margin-right: 10px;">
+                    ${c.name} - ${c.phone}
+                </label>
+            `).join('');
+        }
+
+        function loadScripts() {
+            // Scripts are already loaded from localStorage
+            // Additional UI updates if needed
+        }
+
+        function loadCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const monthDisplay = document.getElementById('currentMonth');
+            
+            // Display current month
+            monthDisplay.textContent = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            
+            // Get first day of month and number of days
+            const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+            const lastDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay());
+            
+            // Generate calendar days
+            let calendarHTML = '';
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            
+            // Add day headers
+            dayNames.forEach(day => {
+                calendarHTML += `<div class="calendar-day" style="background: var(--gray-light); font-weight: bold; text-align: center;">${day}</div>`;
+            });
+            
+            // Add calendar days
+            for (let i = 0; i < 35; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                
+                const isCurrentMonth = currentDate.getMonth() === currentMonth.getMonth();
+                const isToday = currentDate.toDateString() === new Date().toDateString();
+                
+                // Find follow-ups for this day
+                const dayFollowUps = calls.filter(c => {
+                    if (!c.followUpDate) return false;
+                    const followUpDate = new Date(c.followUpDate);
+                    return followUpDate.toDateString() === currentDate.toDateString() &&
+                           (currentUser.role !== 'user' || c.userId === currentUser.id);
+                });
+                
+                calendarHTML += `
+                    <div class="calendar-day" style="
+                        opacity: ${isCurrentMonth ? '1' : '0.5'};
+                        background: ${isToday ? 'rgba(76, 175, 80, 0.1)' : 'var(--card-bg)'};
+                    ">
+                        <div class="calendar-day-header">${currentDate.getDate()}</div>
+                        ${dayFollowUps.map(f => {
+                            const contact = contacts.find(c => c.id === f.contactId);
+                            return `<div class="calendar-event" onclick="viewCall('${f.id}')">${contact?.name || 'Follow-up'}</div>`;
+                        }).join('')}
+                    </div>
+                `;
+            }
+            
+            grid.innerHTML = calendarHTML;
+        }
+
+        function previousMonth() {
+            currentMonth.setMonth(currentMonth.getMonth() - 1);
+            loadCalendar();
+        }
+
+        function nextMonth() {
+            currentMonth.setMonth(currentMonth.getMonth() + 1);
+            loadCalendar();
+        }
+
+        function loadTeamData() {
+            const tbody = document.getElementById('teamTableBody');
+            const volunteers = users.filter(u => u.role === 'user');
+            
+            // Calculate team statistics
+            let totalTeamCalls = 0;
+            let totalSuccessful = 0;
+            let totalFollowups = 0;
+            let totalDuration = 0;
+            
+            // Create leaderboard data
+            const leaderboard = volunteers.map(volunteer => {
+                const userCalls = calls.filter(c => c.userId === volunteer.id);
+                const successful = userCalls.filter(c => c.status === 'completed').length;
+                const followups = userCalls.filter(c => c.status === 'follow-up').length;
+                const totalUserDuration = userCalls.reduce((sum, c) => sum + (c.duration || 0), 0);
+                const avgDuration = userCalls.length > 0 ? Math.round(totalUserDuration / userCalls.length) : 0;
+                const successRate = userCalls.length > 0 ? Math.round((successful / userCalls.length) * 100) : 0;
+                const lastCall = userCalls.sort((a, b) => new Date(b.callDate) - new Date(a.callDate))[0];
+                
+                // Calculate points (gamification)
+                const points = (userCalls.length * 10) + (successful * 50) + (avgDuration * 2);
+                
+                totalTeamCalls += userCalls.length;
+                totalSuccessful += successful;
+                totalFollowups += followups;
+                totalDuration += totalUserDuration;
+                
+                return {
+                    volunteer,
+                    totalCalls: userCalls.length,
+                    successful,
+                    followups,
+                    avgDuration,
+                    successRate,
+                    lastCall,
+                    points
+                };
+            }).sort((a, b) => b.points - a.points);
+            
+            // Update team stats cards
+            const teamSuccessRate = totalTeamCalls > 0 ? Math.round((totalSuccessful / totalTeamCalls) * 100) : 0;
+            const teamAvgDuration = totalTeamCalls > 0 ? Math.round(totalDuration / totalTeamCalls) : 0;
+            
+            document.getElementById('teamTotalCalls').textContent = totalTeamCalls;
+            document.getElementById('teamSuccessRate').textContent = teamSuccessRate + '%';
+            document.getElementById('teamAvgDuration').textContent = teamAvgDuration + 'm';
+            document.getElementById('teamPendingFollowups').textContent = totalFollowups;
+            
+            // Render leaderboard
+            tbody.innerHTML = leaderboard.map((data, index) => {
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+                
+                return `
+                    <tr ${index < 3 ? 'style="background: rgba(76, 175, 80, 0.05);"' : ''}>
+                        <td style="font-size: 20px; text-align: center;">${medal}</td>
+                        <td><strong>${data.volunteer.name}</strong></td>
+                        <td>${data.totalCalls}</td>
+                        <td>${data.successful}</td>
+                        <td>${data.successRate}%</td>
+                        <td>${data.avgDuration} min</td>
+                        <td><strong style="color: var(--primary);">${data.points}</strong></td>
+                        <td>${data.lastCall ? formatDate(data.lastCall.callDate) : 'Never'}</td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Draw performance chart
+            drawPerformanceChart();
+        }
+
+        function drawPerformanceChart() {
+            const canvas = document.getElementById('performanceChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Get last 7 days data
+            const days = [];
+            const data = [];
+            
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                date.setHours(0, 0, 0, 0);
+                
+                const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                days.push(dayName);
+                
+                const dayCalls = calls.filter(c => {
+                    const callDate = new Date(c.callDate);
+                    callDate.setHours(0, 0, 0, 0);
+                    return callDate.getTime() === date.getTime();
+                }).length;
+                
+                data.push(dayCalls);
+            }
+            
+            // Clear and setup canvas
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 300;
+            
+            const padding = 40;
+            const chartWidth = canvas.width - padding * 2;
+            const chartHeight = canvas.height - padding * 2;
+            const maxValue = Math.max(...data, 10);
+            
+            // Clear background
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--card-bg');
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw axes
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, canvas.height - padding);
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border');
+            ctx.stroke();
+            
+            // Draw grid lines
+            ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border');
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i <= 5; i++) {
+                const y = padding + (chartHeight / 5) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(canvas.width - padding, y);
+                ctx.stroke();
+                
+                // Y-axis labels
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--gray-dark');
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'right';
+                const value = Math.round(maxValue - (maxValue / 5) * i);
+                ctx.fillText(value, padding - 10, y + 4);
+            }
+            
+            // Draw data line
+            ctx.beginPath();
+            ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary');
+            ctx.lineWidth = 2;
+            
+            data.forEach((value, index) => {
+                const x = padding + (chartWidth / (data.length - 1)) * index;
+                const y = canvas.height - padding - (value / maxValue) * chartHeight;
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            
+            ctx.stroke();
+            
+            // Draw data points and labels
+            data.forEach((value, index) => {
+                const x = padding + (chartWidth / (data.length - 1)) * index;
+                const y = canvas.height - padding - (value / maxValue) * chartHeight;
+                
+                // Draw point
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary');
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw day label
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text');
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(days[index], x, canvas.height - padding + 20);
+                
+                // Draw value on point
+                ctx.fillText(value, x, y - 10);
+            });
+        }
+
+        function loadUsers() {
+            const tbody = document.getElementById('usersTableBody');
+            
+            tbody.innerHTML = users.map(user => {
+                const userCalls = calls.filter(c => c.userId === user.id).length;
+                const statusClass = user.active ? 'status-active' : 'status-inactive';
+                const statusText = user.active ? 'Active' : 'Inactive';
+                
+                return `
+                    <tr>
+                        <td>${user.name}</td>
+                        <td>${user.email}</td>
+                        <td>${user.role.charAt(0).toUpperCase() + user.role.slice(1)}</td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>${userCalls}</td>
+                        <td>${formatDate(user.lastLogin)}</td>
+                        <td>${formatDate(user.createdAt)}</td>
+                        <td>
+                            <button class="action-btn" onclick="toggleUserStatus('${user.id}')" title="${user.active ? 'Deactivate' : 'Activate'}">${user.active ? '🚫' : '✅'}</button>
+                            <button class="action-btn" onclick="resetPassword('${user.id}')" title="Reset Password">🔑</button>
+                            ${user.id !== currentUser.id ? `<button class="action-btn" onclick="deleteUser('${user.id}')" style="color: var(--danger);" title="Delete">🗑️</button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function loadReports() {
+            // Calculate overall statistics
+            const totalCallsCount = calls.length;
+            const totalContactsCount = contacts.length;
+            const successfulCalls = calls.filter(c => c.status === 'completed').length;
+            const conversionRate = totalCallsCount > 0 ? Math.round((successfulCalls / totalCallsCount) * 100) : 0;
+            const activeVolunteersCount = users.filter(u => u.role === 'user' && u.active).length;
+            
+            // Update stat cards
+            document.getElementById('totalCalls').textContent = totalCallsCount;
+            document.getElementById('totalContacts').textContent = totalContactsCount;
+            document.getElementById('conversionRate').textContent = conversionRate + '%';
+            document.getElementById('activeVolunteers').textContent = activeVolunteersCount;
+            
+            // Draw status distribution chart
+            drawStatusChart();
+        }
+
+        function drawStatusChart() {
+            const canvas = document.getElementById('statusChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Count calls by status
+            const statusCounts = {};
+            calls.forEach(call => {
+                statusCounts[call.status] = (statusCounts[call.status] || 0) + 1;
+            });
+            
+            // Setup canvas
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 300;
+            
+            // Clear background
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--card-bg');
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw bars
+            const statuses = Object.keys(statusCounts);
+            const maxValue = Math.max(...Object.values(statusCounts));
+            const barWidth = (canvas.width - 100) / statuses.length;
+            const chartHeight = canvas.height - 60;
+            
+            statuses.forEach((status, index) => {
+                const value = statusCounts[status];
+                const barHeight = (value / maxValue) * chartHeight;
+                const x = 50 + index * barWidth;
+                const y = canvas.height - 40 - barHeight;
+                
+                // Draw bar
+                ctx.fillStyle = getStatusColor(status);
+                ctx.fillRect(x + 10, y, barWidth - 20, barHeight);
+                
+                // Draw value
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text');
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(value, x + barWidth / 2, y - 5);
+                
+                // Draw label
+                ctx.save();
+                ctx.translate(x + barWidth / 2, canvas.height - 35);
+                ctx.rotate(-Math.PI / 6);
+                ctx.textAlign = 'right';
+                ctx.fillText(formatStatus(status), 0, 0);
+                ctx.restore();
+            });
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'completed': '#4CAF50',
+                'follow-up': '#2196F3',
+                'no-answer': '#FF9800',
+                'not-interested': '#f44336',
+                'busy': '#9C27B0',
+                'wrong-number': '#795548',
+                'callback': '#00BCD4'
+            };
+            return colors[status] || '#9E9E9E';
+        }
+
+        function getStatusClass(status) {
+            const classes = {
+                'completed': 'status-completed',
+                'follow-up': 'status-followUp',
+                'no-answer': 'status-pending',
+                'not-interested': 'status-notInterested',
+                'busy': 'status-pending',
+                'wrong-number': 'status-failed',
+                'callback': 'status-followUp',
+                'pending': 'status-pending'
+            };
+            return classes[status] || 'status-pending';
+        }
+
+        // Modal Functions
+        function showCallModal(contactId = null) {
+            document.getElementById('callModalTitle').textContent = 'Log Call';
+            document.getElementById('callForm').reset();
+            document.getElementById('callId').value = '';
+            
+            if (contactId) {
+                document.getElementById('callContact').value = contactId;
+            }
+            
+            document.getElementById('callModal').classList.add('show');
+        }
+
+        function showQuickCallModal() {
+            document.getElementById('quickCallModal').classList.add('show');
+        }
+
+        function showContactModal() {
+            document.getElementById('contactModalTitle').textContent = 'Add Contact';
+            document.getElementById('contactForm').reset();
+            document.getElementById('contactId').value = '';
+            document.getElementById('contactModal').classList.add('show');
+        }
+
+        function showUserModal() {
+            document.getElementById('userModal').classList.add('show');
+        }
+
+        function showBulkUploadModal() {
+            document.getElementById('bulkUploadModal').classList.add('show');
+        }
+
+        function showBatchAssignModal() {
+            document.getElementById('batchAssignModal').classList.add('show');
+        }
+
+        function showScriptModal() {
+            // Would show a modal to add custom scripts
+            showToast('Custom scripts feature coming soon!', 'warning');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        // Form Submissions
+        document.getElementById('callForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const callId = document.getElementById('callId').value;
+            const callData = {
+                contactId: document.getElementById('callContact').value,
+                userId: currentUser.id,
+                status: document.getElementById('callStatus').value,
+                duration: parseInt(document.getElementById('callDuration').value) || 0,
+                notes: document.getElementById('callNotes').value,
+                followUpDate: document.getElementById('followUpDate').value || null
+            };
+            
+            if (callId) {
+                // Edit existing call
+                const callIndex = calls.findIndex(c => c.id === callId);
+                if (callIndex !== -1) {
+                    calls[callIndex] = { ...calls[callIndex], ...callData };
+                    showToast('Call updated successfully');
+                }
+            } else {
+                // Create new call
+                const newCall = {
+                    id: generateId(),
+                    ...callData,
+                    callDate: new Date().toISOString()
+                };
+                calls.push(newCall);
+                showToast('Call logged successfully');
+            }
+            
+            saveToLocalStorage();
+            loadCalls();
+            loadDashboard();
+            updateNotifications();
+            closeModal('callModal');
+            
+            // Reset form
+            this.reset();
+        });
+
+        document.getElementById('quickCallForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const checkboxes = document.querySelectorAll('#quickCallContactsList input[type="checkbox"]:checked');
+            let logged = 0;
+            
+            checkboxes.forEach(checkbox => {
+                const newCall = {
+                    id: generateId(),
+                    contactId: checkbox.value,
+                    userId: currentUser.id,
+                    status: 'no-answer',
+                    duration: 0,
+                    notes: 'Quick log - No answer',
+                    callDate: new Date().toISOString(),
+                    followUpDate: null
+                };
+                calls.push(newCall);
+                logged++;
+            });
+            
+            if (logged > 0) {
+                saveToLocalStorage();
+                loadCalls();
+                loadDashboard();
+                showToast(`${logged} calls logged as "No Answer"`);
+                closeModal('quickCallModal');
+            } else {
+                showToast('Please select at least one contact', 'warning');
+            }
+        });
+
+        document.getElementById('contactForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const contactId = document.getElementById('contactId').value;
+            const selectedTags = Array.from(document.getElementById('contactTags').selectedOptions).map(o => o.value);
+            
+            const contactData = {
+                name: document.getElementById('contactName').value,
+                phone: document.getElementById('contactPhone').value,
+                email: document.getElementById('contactEmail').value,
+                notes: document.getElementById('contactNotes').value,
+                assignedTo: document.getElementById('assignTo').value || null,
+                tags: selectedTags,
+                status: 'active'
+            };
+            
+            if (contactId) {
+                // Edit existing contact
+                const contactIndex = contacts.findIndex(c => c.id === contactId);
+                if (contactIndex !== -1) {
+                    contacts[contactIndex] = { ...contacts[contactIndex], ...contactData };
+                    showToast('Contact updated successfully');
+                }
+            } else {
+                // Create new contact
+                const newContact = {
+                    id: generateId(),
+                    ...contactData,
+                    createdAt: new Date().toISOString()
+                };
+                contacts.push(newContact);
+                showToast('Contact added successfully');
+            }
+            
+            saveToLocalStorage();
+            loadContacts();
+            closeModal('contactModal');
+            
+            // Reset form
+            this.reset();
+        });
+
+        document.getElementById('userForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const newUser = {
+                id: generateId(),
+                name: document.getElementById('userNameInput').value,
+                email: document.getElementById('userEmail').value,
+                password: btoa(document.getElementById('userPassword').value),
+                role: document.getElementById('userRoleSelect').value,
+                monthlyGoal: parseInt(document.getElementById('userGoal').value) || 100,
+                createdAt: new Date().toISOString(),
+                lastLogin: null,
+                active: true
+            };
+            
+            users.push(newUser);
+            saveToLocalStorage();
+            loadUsers();
+            showToast('User created successfully');
+            closeModal('userModal');
+            
+            // Reset form
+            this.reset();
+        });
+
+        // Action Functions
+        function editCall(callId) {
+            const call = calls.find(c => c.id === callId);
+            if (!call) return;
+            
+            document.getElementById('callModalTitle').textContent = 'Edit Call';
+            document.getElementById('callId').value = call.id;
+            document.getElementById('callContact').value = call.contactId;
+            document.getElementById('callStatus').value = call.status;
+            document.getElementById('callDuration').value = call.duration || '';
+            document.getElementById('callNotes').value = call.notes || '';
+            document.getElementById('followUpDate').value = call.followUpDate || '';
+            
+            document.getElementById('callModal').classList.add('show');
+        }
+
+        function deleteCall(callId) {
+            if (confirm('Are you sure you want to delete this call?')) {
+                calls = calls.filter(c => c.id !== callId);
+                saveToLocalStorage();
+                loadCalls();
+                loadDashboard();
+                showToast('Call deleted');
+            }
+        }
+
+        function editContact(contactId) {
+            const contact = contacts.find(c => c.id === contactId);
+            if (!contact) return;
+            
+            document.getElementById('contactModalTitle').textContent = 'Edit Contact';
+            document.getElementById('contactId').value = contact.id;
+            document.getElementById('contactName').value = contact.name;
+            document.getElementById('contactPhone').value = contact.phone;
+            document.getElementById('contactEmail').value = contact.email || '';
+            document.getElementById('contactNotes').value = contact.notes || '';
+            document.getElementById('assignTo').value = contact.assignedTo || '';
+            
+            // Set selected tags
+            const tagSelect = document.getElementById('contactTags');
+            Array.from(tagSelect.options).forEach(option => {
+                option.selected = (contact.tags || []).includes(option.value);
+            });
+            
+            document.getElementById('contactModal').classList.add('show');
+        }
+
+        function deleteContact(contactId) {
+            if (confirm('Are you sure you want to delete this contact? All related calls will also be deleted.')) {
+                contacts = contacts.filter(c => c.id !== contactId);
+                calls = calls.filter(c => c.contactId !== contactId);
+                saveToLocalStorage();
+                loadContacts();
+                loadCalls();
+                showToast('Contact deleted');
+            }
+        }
+
+        function callContact(contactId) {
+            showCallModal(contactId);
+        }
+
+        function viewContactHistory(contactId) {
+            const contact = contacts.find(c => c.id === contactId);
+            if (!contact) return;
+            
+            const contactCalls = calls.filter(c => c.contactId === contactId);
+            
+            let historyHTML = `<h3>Call History for ${contact.name}</h3>`;
+            if (contactCalls.length === 0) {
+                historyHTML += '<p>No calls recorded yet.</p>';
+            } else {
+                historyHTML += '<ul>';
+                contactCalls.sort((a, b) => new Date(b.callDate) - new Date(a.callDate));
+                contactCalls.forEach(call => {
+                    historyHTML += `
+                        <li style="margin-bottom: 10px;">
+                            <strong>${formatDate(call.callDate)}</strong> - ${formatStatus(call.status)}
+                            ${call.duration ? ` (${call.duration} min)` : ''}
+                            ${call.notes ? `<br><em>${call.notes}</em>` : ''}
+                        </li>
+                    `;
+                });
+                historyHTML += '</ul>';
+            }
+            
+            // Show in a simple alert for now (could be improved with a modal)
+            const modal = document.createElement('div');
+            modal.className = 'modal show';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Contact History</h3>
+                        <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                    </div>
+                    ${historyHTML}
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function viewCall(callId) {
+            editCall(callId);
+        }
+
+        function deleteUser(userId) {
+            if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+                users = users.filter(u => u.id !== userId);
+                saveToLocalStorage();
+                loadUsers();
+                showToast('User deleted');
+            }
+        }
+
+        function toggleUserStatus(userId) {
+            const user = users.find(u => u.id === userId);
+            if (user) {
+                user.active = !user.active;
+                saveToLocalStorage();
+                loadUsers();
+                showToast(`User ${user.active ? 'activated' : 'deactivated'}`);
+            }
+        }
+
+        function resetPassword(userId) {
+            const newPassword = prompt('Enter new password (min 6 characters):');
+            if (newPassword && newPassword.length >= 6) {
+                const user = users.find(u => u.id === userId);
+                if (user) {
+                    user.password = btoa(newPassword);
+                    saveToLocalStorage();
+                    showToast('Password updated successfully');
+                }
+            } else if (newPassword) {
+                showToast('Password must be at least 6 characters', 'error');
+            }
+        }
+
+        function updateAssignUI() {
+            const method = document.getElementById('assignMethod').value;
+            const specificGroup = document.getElementById('specificUserGroup');
+            specificGroup.style.display = method === 'specific' ? 'block' : 'none';
+        }
+
+        function processBatchAssign() {
+            const method = document.getElementById('assignMethod').value;
+            const unassignedContacts = contacts.filter(c => !c.assignedTo);
+            const volunteers = users.filter(u => u.role === 'user' && u.active);
+            
+            if (unassignedContacts.length === 0) {
+                showToast('No unassigned contacts to assign', 'warning');
+                return;
+            }
+            
+            if (volunteers.length === 0) {
+                showToast('No active volunteers available', 'error');
+                return;
+            }
+            
+            let assigned = 0;
+            
+            switch(method) {
+                case 'equal':
+                    const contactsPerVolunteer = Math.ceil(unassignedContacts.length / volunteers.length);
+                    let volunteerIndex = 0;
+                    
+                    unassignedContacts.forEach(contact => {
+                        contact.assignedTo = volunteers[volunteerIndex].id;
+                        assigned++;
+                        
+                        if (assigned % contactsPerVolunteer === 0 && volunteerIndex < volunteers.length - 1) {
+                            volunteerIndex++;
+                        }
+                    });
+                    break;
+                    
+                case 'specific':
+                    const selectedUserId = document.getElementById('batchAssignUser').value;
+                    unassignedContacts.forEach(contact => {
+                        contact.assignedTo = selectedUserId;
+                        assigned++;
+                    });
+                    break;
+                    
+                case 'round-robin':
+                    let rrIndex = 0;
+                    unassignedContacts.forEach(contact => {
+                        contact.assignedTo = volunteers[rrIndex].id;
+                        assigned++;
+                        rrIndex = (rrIndex + 1) % volunteers.length;
+                    });
+                    break;
+            }
+            
+            saveToLocalStorage();
+            loadContacts();
+            closeModal('batchAssignModal');
+            showToast(`${assigned} contacts assigned successfully`);
+        }
+
+        function processBulkUpload() {
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+            const skipDuplicates = document.getElementById('skipDuplicates').checked;
+            
+            if (!file) {
+                showToast('Please select a CSV file', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csv = e.target.result;
+                const lines = csv.split('\n');
+                const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                
+                let imported = 0;
+                let skipped = 0;
+                
+                for (let i = 1; i < lines.length; i++) {
+                    if (!lines[i].trim()) continue;
+                    
+                    const values = lines[i].split(',').map(v => v.trim());
+                    
+                    const phone = values[headers.indexOf('phone')] || '';
+                    
+                    // Skip duplicates if requested
+                    if (skipDuplicates && contacts.some(c => c.phone === phone)) {
+                        skipped++;
+                        continue;
+                    }
+                    
+                    const tagsString = values[headers.indexOf('tags')] || '';
+                    const tags = tagsString ? tagsString.split(';').map(t => t.trim()) : [];
+                    
+                    const contact = {
+                        id: generateId(),
+                        name: values[headers.indexOf('name')] || '',
+                        phone: phone,
+                        email: values[headers.indexOf('email')] || '',
+                        notes: values[headers.indexOf('notes')] || '',
+                        tags: tags,
+                        assignedTo: null,
+                        status: 'active',
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    if (contact.name && contact.phone) {
+                        contacts.push(contact);
+                        imported++;
+                    }
+                }
+                
+                saveToLocalStorage();
+                loadContacts();
+                closeModal('bulkUploadModal');
+                
+                let message = `Successfully imported ${imported} contacts`;
+                if (skipped > 0) {
+                    message += ` (${skipped} duplicates skipped)`;
+                }
+                showToast(message);
+                fileInput.value = '';
+            };
+            
+            reader.readAsText(file);
+        }
+
+        function viewScript(scriptId) {
+            const scriptData = {
+                'intro': {
+                    title: 'Introduction Script',
+                    content: `Hello, is this [Contact Name]?
+
+Hi [Contact Name], my name is [Your Name] and I'm calling from [Organization Name]. We got your contact information from [Source] indicating you might be interested in volunteering with us.
+
+Do you have a few minutes to talk about volunteer opportunities?
+
+[If YES]
+Great! We're currently looking for volunteers to help with [specific activities]. The time commitment is typically [hours per week/month], and we're very flexible with scheduling.
+
+What kind of volunteer work interests you most?
+
+[Listen and respond to their interests]
+
+Would you be available to come in for an orientation session? We have sessions on [days/times].
+
+[If NO]
+No problem! Would there be a better time I could call you back? Or if you prefer, I can send you an email with more information.
+
+Thank you for your time!`
+                },
+                'followup': {
+                    title: 'Follow-up Script',
+                    content: `Hi [Contact Name], this is [Your Name] from [Organization Name]. We spoke [timeframe] about volunteer opportunities.
+
+I wanted to follow up and see if you had any questions or if you're ready to get started with volunteering?
+
+[Listen to response]
+
+[If interested]
+Wonderful! The next step would be to schedule an orientation session. We have sessions on [days/times]. Which would work best for you?
+
+[If still thinking]
+That's completely understandable. What questions or concerns can I address for you?
+
+[If not interested]
+I understand, and I appreciate you letting me know. If your situation changes in the future, we'd love to hear from you. Have a great day!`
+                },
+                'objection': {
+                    title: 'Common Objections & Responses',
+                    content: `OBJECTION: "I don't have time"
+RESPONSE: "I completely understand - everyone's busy these days. The great thing about our volunteer program is its flexibility. Even just 2 hours a month can make a real difference. We work around your schedule."
+
+OBJECTION: "I'm not sure I have the right skills"
+RESPONSE: "That's a common concern, but we provide all the training you need. Many of our best volunteers started with no experience. What matters most is your enthusiasm and willingness to help."
+
+OBJECTION: "I want to think about it"
+RESPONSE: "Of course! This is an important decision. Would it be helpful if I sent you some information about our programs? I can also follow up with you next week to answer any questions that come up."
+
+OBJECTION: "What exactly would I be doing?"
+RESPONSE: "Great question! We have several areas where volunteers help: [list specific activities]. Based on what you've told me, I think you'd be perfect for [specific role]. Would you like to hear more about that?"
+
+OBJECTION: "Is there a long-term commitment?"
+RESPONSE: "Not at all! We appreciate any time you can give. Some volunteers help out once, others come regularly. You can start with a single shift and see how it goes."`
+                },
+                'closing': {
+                    title: 'Closing Script',
+                    content: `So [Contact Name], based on what we've discussed, it sounds like [summarize their interests/availability].
+
+Our next orientation session is [date/time]. This is a great opportunity to meet other volunteers, learn more about our organization, and find the perfect volunteer role for you.
+
+Can I sign you up for that session?
+
+[If YES]
+Excellent! I'll send you a confirmation email with all the details. The orientation is at [location]. Is the email address I have on file still correct?
+
+[Confirm details]
+
+We're so excited to have you join our team! If you have any questions before the orientation, feel free to call us at [phone number].
+
+[If MAYBE]
+I understand you might need to check your schedule. How about I send you the details via email, and you can let me know by [deadline]? We'd love to have you, but I want to make sure you're completely comfortable with the timing.
+
+Thank you so much for your time today, [Contact Name]. We really appreciate your interest in helping our cause!`
+                }
+            };
+            
+            const script = scriptData[scriptId];
+            if (script) {
+                document.getElementById('scriptTitle').textContent = script.title;
+                document.getElementById('scriptContent').textContent = script.content;
+                document.getElementById('scriptViewModal').classList.add('show');
+            }
+        }
+
+        function copyScript() {
+            const content = document.getElementById('scriptContent').textContent;
+            navigator.clipboard.writeText(content).then(() => {
+                showToast('Script copied to clipboard!');
+            }).catch(() => {
+                showToast('Failed to copy script', 'error');
+            });
+        }
+
+        function viewFollowUps() {
+            switchTab('calendar');
+        }
+
+        // Export Functions
+        function exportMyCalls() {
+            const userCalls = calls.filter(c => c.userId === currentUser.id);
+            exportToCSV(userCalls.map(call => {
+                const contact = contacts.find(c => c.id === call.contactId);
+                return {
+                    Date: formatDate(call.callDate),
+                    Contact: contact?.name || 'Unknown',
+                    Phone: contact?.phone || 'N/A',
+                    Status: formatStatus(call.status),
+                    Duration: call.duration + ' min',
+                    Notes: call.notes || '',
+                    FollowUp: call.followUpDate ? formatDate(call.followUpDate) : ''
+                };
+            }), 'my-calls.csv');
+        }
+
+        function exportFullReport() {
+            const report = calls.map(call => {
+                const contact = contacts.find(c => c.id === call.contactId);
+                const user = users.find(u => u.id === call.userId);
+                return {
+                    Date: formatDate(call.callDate),
+                    Volunteer: user?.name || 'Unknown',
+                    Contact: contact?.name || 'Unknown',
+                    Phone: contact?.phone || 'N/A',
+                    Status: formatStatus(call.status),
+                    Duration: call.duration + ' min',
+                    Notes: call.notes || '',
+                    FollowUp: call.followUpDate ? formatDate(call.followUpDate) : ''
+                };
+            });
+            exportToCSV(report, 'full-report.csv');
+        }
+
+        function exportContactsReport() {
+            const report = contacts.map(contact => {
+                const assignedUser = users.find(u => u.id === contact.assignedTo);
+                const contactCalls = calls.filter(c => c.contactId === contact.id);
+                const lastCall = contactCalls.sort((a, b) => new Date(b.callDate) - new Date(a.callDate))[0];
+                
+                return {
+                    Name: contact.name,
+                    Phone: contact.phone,
+                    Email: contact.email || '',
+                    Tags: (contact.tags || []).join('; '),
+                    AssignedTo: assignedUser?.name || 'Unassigned',
+                    TotalCalls: contactCalls.length,
+                    LastCalled: lastCall ? formatDate(lastCall.callDate) : 'Never',
+                    Status: contact.status,
+                    Notes: contact.notes || ''
+                };
+            });
+            exportToCSV(report, 'contacts-report.csv');
+        }
+
+        function exportCallsReport() {
+            exportFullReport();
+        }
+
+        function exportTeamReport() {
+            const volunteers = users.filter(u => u.role === 'user');
+            const report = volunteers.map(volunteer => {
+                const userCalls = calls.filter(c => c.userId === volunteer.id);
+                const successful = userCalls.filter(c => c.status === 'completed').length;
+                const successRate = userCalls.length > 0 ? Math.round((successful / userCalls.length) * 100) : 0;
+                
+                return {
+                    Volunteer: volunteer.name,
+                    Email: volunteer.email,
+                    Status: volunteer.active ? 'Active' : 'Inactive',
+                    TotalCalls: userCalls.length,
+                    SuccessfulCalls: successful,
+                    SuccessRate: successRate + '%',
+                    LastActive: volunteer.lastLogin ? formatDate(volunteer.lastLogin) : 'Never'
+                };
+            });
+            exportToCSV(report, 'team-report.csv');
+        }
+
+        function exportToCSV(data, filename) {
+            if (data.length === 0) {
+                showToast('No data to export', 'warning');
+                return;
+            }
+            
+            const headers = Object.keys(data[0]);
+            const csvContent = [
+                headers.join(','),
+                ...data.map(row => headers.map(header => {
+                    const value = row[header];
+                    // Escape quotes and wrap in quotes if contains comma
+                    const escaped = String(value).replace(/"/g, '""');
+                    return escaped.includes(',') ? `"${escaped}"` : escaped;
+                }).join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            showToast('Export completed successfully');
+        }
+
+        function printReport() {
+            window.print();
+        }
+
+        // Batch Actions
+        function updateBatchActions() {
+            const batchActions = document.getElementById('batchActions');
+            const selectedCount = document.getElementById('selectedCount');
+            
+            if (selectedCalls.size > 0) {
+                batchActions.style.display = 'flex';
+                selectedCount.textContent = selectedCalls.size;
+            } else {
+                batchActions.style.display = 'none';
+            }
+        }
+
+        function batchUpdateStatus() {
+            const newStatus = prompt('Enter new status:\ncompleted, no-answer, busy, follow-up, not-interested, callback');
+            if (newStatus && ['completed', 'no-answer', 'busy', 'follow-up', 'not-interested', 'callback'].includes(newStatus)) {
+                selectedCalls.forEach(callId => {
+                    const call = calls.find(c => c.id === callId);
+                    if (call) {
+                        call.status = newStatus;
+                    }
+                });
+                saveToLocalStorage();
+                loadCalls();
+                clearSelection();
+                showToast('Status updated for selected calls');
+            }
+        }
+
+        function batchDelete() {
+            if (confirm(`Delete ${selectedCalls.size} selected calls?`)) {
+                calls = calls.filter(c => !selectedCalls.has(c.id));
+                saveToLocalStorage();
+                loadCalls();
+                clearSelection();
+                showToast('Selected calls deleted');
+            }
+        }
+
+        function clearSelection() {
+            selectedCalls.clear();
+            document.querySelectorAll('.call-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('selectAllCalls').checked = false;
+            updateBatchActions();
+        }
+
+        // Select All functionality
+        document.getElementById('selectAllCalls')?.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.call-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = this.checked;
+                if (this.checked) {
+                    selectedCalls.add(cb.dataset.id);
+                } else {
+                    selectedCalls.delete(cb.dataset.id);
+                }
+            });
+            updateBatchActions();
+        });
+
+        // Search and Filter Functions
+        document.getElementById('callSearch')?.addEventListener('input', function() {
+            filterCalls();
+        });
+
+        document.getElementById('callStatusFilter')?.addEventListener('change', function() {
+            filterCalls();
+        });
+
+        document.getElementById('callDateFilter')?.addEventListener('change', function() {
+            filterCalls();
+        });
+
+        function filterCalls() {
+            const searchTerm = document.getElementById('callSearch').value.toLowerCase();
+            const statusFilter = document.getElementById('callStatusFilter').value;
+            const dateFilter = document.getElementById('callDateFilter').value;
+            
+            const rows = document.querySelectorAll('#callsTableBody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const statusMatch = !statusFilter || row.querySelector('.status-badge')?.textContent.toLowerCase().includes(statusFilter);
+                const searchMatch = !searchTerm || text.includes(searchTerm);
+                
+                let dateMatch = true;
+                if (dateFilter) {
+                    const rowDate = row.cells[4].textContent;
+                    dateMatch = rowDate.includes(new Date(dateFilter).toLocaleDateString());
+                }
+                
+                row.style.display = (statusMatch && searchMatch && dateMatch) ? '' : 'none';
+            });
+        }
+
+        document.getElementById('contactSearch')?.addEventListener('input', function() {
+            filterContacts();
+        });
+
+        document.getElementById('contactAssignFilter')?.addEventListener('change', function() {
+            filterContacts();
+        });
+
+        document.getElementById('contactTagFilter')?.addEventListener('change', function() {
+            filterContacts();
+        });
+
+        function filterContacts() {
+            const searchTerm = document.getElementById('contactSearch').value.toLowerCase();
+            const assignFilter = document.getElementById('contactAssignFilter').value;
+            const tagFilter = document.getElementById('contactTagFilter').value;
+            
+            const rows = document.querySelectorAll('#contactsTableBody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const searchMatch = !searchTerm || text.includes(searchTerm);
+                
+                let assignMatch = true;
+                if (assignFilter === 'unassigned') {
+                    assignMatch = row.cells[5].textContent === 'Unassigned';
+                } else if (assignFilter === 'assigned') {
+                    assignMatch = row.cells[5].textContent !== 'Unassigned';
+                }
+                
+                let tagMatch = true;
+                if (tagFilter) {
+                    const tags = row.cells[4].textContent;
+                    tagMatch = tags.includes(tagFilter);
+                }
+                
+                row.style.display = (searchMatch && assignMatch && tagMatch) ? '' : 'none';
+            });
+        }
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Only work when not in an input field
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            // ? - Show shortcuts
+            if (e.key === '?') {
+                showKeyboardShortcuts();
+            }
+            
+            // Ctrl/Cmd + N - New call
+            if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                e.preventDefault();
+                showCallModal();
+            }
+            
+            // Ctrl/Cmd + K - Search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                document.getElementById('callSearch')?.focus();
+            }
+        });
+
+        function showKeyboardShortcuts() {
+            const modal = document.createElement('div');
+            modal.className = 'modal show';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Keyboard Shortcuts</h3>
+                        <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                    </div>
+                    <div style="line-height: 2;">
+                        <div><kbd>?</kbd> - Show this help</div>
+                        <div><kbd>Ctrl</kbd> + <kbd>N</kbd> - New call</div>
+                        <div><kbd>Ctrl</kbd> + <kbd>K</kbd> - Search</div>
+                        <div><kbd>Esc</kbd> - Close modal</div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Helper Functions
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function formatDateTime(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+            });
+        }
+
+        function formatStatus(status) {
+            return status.split('-').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            initializeDemoData();
+            
+            // Check for saved theme
+            const savedTheme = localStorage.getItem('vcm_theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                const themeToggle = document.querySelector('.theme-toggle');
+                if (themeToggle) {
+                    themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+                }
+            }
+            
+            // Check for existing session
+            const savedUser = localStorage.getItem('vcm_currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                // Verify user still exists
+                if (users.find(u => u.id === currentUser.id)) {
+                    showDashboard();
+                } else {
+                    localStorage.removeItem('vcm_currentUser');
+                }
+            }
+            
+            // Hide shortcuts hint after 5 seconds
+            setTimeout(() => {
+                const hint = document.getElementById('shortcutsHint');
+                if (hint) hint.style.display = 'none';
+            }, 5000);
+        });
+
+        // Prevent closing modals when clicking inside
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('show');
+                }
+            });
+        });
+
+        // ESC key to close modals
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal.show').forEach(modal => {
+                    modal.classList.remove('show');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
