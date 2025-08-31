@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Volunteer Call Manager</title>
-    <script src="https://unpkg.com/@instantdb/core"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/trailbase@0.7.1/dist/client/src/index.js"></script>
     <style>
         * {
             margin: 0;
@@ -1514,12 +1514,16 @@ Jane Smith,555-0102,,Available mornings only,morning;high-priority</textarea>
         Press <kbd>?</kbd> for keyboard shortcuts
     </div>
 
-    <script>
-        // InstantDB Configuration
-        const APP_ID = 'volunteer-call-manager-' + Math.random().toString(36).substring(7);
-        const db = {}//window.instantdb.init({ appId: APP_ID });
+    <script type="module">
+        import { init } from 'https://cdn.jsdelivr.net/npm/trailbase@0.7.1/dist/client/src/index.js';
+
+        // TrailBase Configuration
+        const db = init({
+            url: "http://localhost:4000",
+        });
 
         // Global State
+        let isOnline = false;
         let currentUser = null;
         let users = [];
         let contacts = [];
@@ -1529,145 +1533,35 @@ Jane Smith,555-0102,,Available mornings only,morning;high-priority</textarea>
         let selectedContacts = new Set();
         let currentMonth = new Date();
 
-        // Initialize Demo Data
+        // Helper Functions
         function initializeDemoData() {
             // Check if data already exists
             const existingUsers = localStorage.getItem('vcm_users');
             if (!existingUsers) {
                 // Create demo users
                 const demoUsers = [
-                    {
-                        id: generateId(),
-                        name: 'Admin User',
-                        email: 'admin@org.com',
-                        password: btoa('admin123'),
-                        role: 'admin',
-                        createdAt: new Date().toISOString(),
-                        lastLogin: new Date().toISOString(),
-                        active: true,
-                        monthlyGoal: 150
-                    },
-                    {
-                        id: generateId(),
-                        name: 'Manager Mike',
-                        email: 'manager@org.com',
-                        password: btoa('manager123'),
-                        role: 'manager',
-                        createdAt: new Date().toISOString(),
-                        lastLogin: new Date(Date.now() - 86400000).toISOString(),
-                        active: true,
-                        monthlyGoal: 200
-                    },
-                    {
-                        id: generateId(),
-                        name: 'Volunteer Sarah',
-                        email: 'volunteer@org.com',
-                        password: btoa('volunteer123'),
-                        role: 'user',
-                        createdAt: new Date().toISOString(),
-                        lastLogin: new Date().toISOString(),
-                        active: true,
-                        monthlyGoal: 100
-                    }
+                    { id: generateId(), name: 'Admin User', email: 'admin@org.com', password: btoa('admin123'), role: 'admin', createdAt: new Date().toISOString(), lastLogin: new Date().toISOString(), active: true, monthlyGoal: 150 },
+                    { id: generateId(), name: 'Manager Mike', email: 'manager@org.com', password: btoa('manager123'), role: 'manager', createdAt: new Date().toISOString(), lastLogin: new Date(Date.now() - 86400000).toISOString(), active: true, monthlyGoal: 200 },
+                    { id: generateId(), name: 'Volunteer Sarah', email: 'volunteer@org.com', password: btoa('volunteer123'), role: 'user', createdAt: new Date().toISOString(), lastLogin: new Date().toISOString(), active: true, monthlyGoal: 100 }
                 ];
 
                 // Create demo contacts
                 const demoContacts = [
-                    {
-                        id: generateId(),
-                        name: 'Alice Johnson',
-                        phone: '555-0101',
-                        email: 'alice@email.com',
-                        notes: 'Interested in weekend volunteering',
-                        assignedTo: demoUsers[2].id,
-                        tags: ['interested', 'weekend'],
-                        status: 'active',
-                        createdAt: new Date().toISOString()
-                    },
-                    {
-                        id: generateId(),
-                        name: 'Bob Smith',
-                        phone: '555-0102',
-                        email: 'bob@email.com',
-                        notes: 'Available for morning shifts',
-                        assignedTo: demoUsers[2].id,
-                        tags: ['morning', 'high-priority'],
-                        status: 'active',
-                        createdAt: new Date().toISOString()
-                    },
-                    {
-                        id: generateId(),
-                        name: 'Carol White',
-                        phone: '555-0103',
-                        email: '',
-                        notes: 'Prefers email communication',
-                        assignedTo: null,
-                        tags: ['callback'],
-                        status: 'active',
-                        createdAt: new Date().toISOString()
-                    }
+                    { id: generateId(), name: 'Alice Johnson', phone: '555-0101', email: 'alice@email.com', notes: 'Interested in weekend volunteering', assignedTo: demoUsers[2].id, tags: ['interested', 'weekend'], status: 'active', createdAt: new Date().toISOString() },
+                    { id: generateId(), name: 'Bob Smith', phone: '555-0102', email: 'bob@email.com', notes: 'Available for morning shifts', assignedTo: demoUsers[2].id, tags: ['morning', 'high-priority'], status: 'active', createdAt: new Date().toISOString() },
+                    { id: generateId(), name: 'Carol White', phone: '555-0103', email: '', notes: 'Prefers email communication', assignedTo: null, tags: ['callback'], status: 'active', createdAt: new Date().toISOString() }
                 ];
 
                 // Create demo calls
                 const demoCalls = [
-                    {
-                        id: generateId(),
-                        contactId: demoContacts[0].id,
-                        userId: demoUsers[2].id,
-                        status: 'completed',
-                        duration: 5,
-                        notes: 'Great conversation, very enthusiastic about helping',
-                        callDate: new Date().toISOString(),
-                        followUpDate: null
-                    },
-                    {
-                        id: generateId(),
-                        contactId: demoContacts[1].id,
-                        userId: demoUsers[2].id,
-                        status: 'follow-up',
-                        duration: 3,
-                        notes: 'Left voicemail, will try again tomorrow',
-                        callDate: new Date(Date.now() - 86400000).toISOString(),
-                        followUpDate: new Date(Date.now() + 86400000).toISOString()
-                    }
+                    { id: generateId(), contactId: demoContacts[0].id, userId: demoUsers[2].id, status: 'completed', duration: 5, notes: 'Great conversation, very enthusiastic about helping', callDate: new Date().toISOString(), followUpDate: null },
+                    { id: generateId(), contactId: demoContacts[1].id, userId: demoUsers[2].id, status: 'follow-up', duration: 3, notes: 'Left voicemail, will try again tomorrow', callDate: new Date(Date.now() - 86400000).toISOString(), followUpDate: new Date(Date.now() + 86400000).toISOString() }
                 ];
 
                 // Create demo scripts
                 const demoScripts = [
-                    {
-                        id: 'intro',
-                        title: 'Introduction Script',
-                        content: `Hello, is this [Contact Name]?
-
-Hi [Contact Name], my name is [Your Name] and I'm calling from [Organization Name]. We got your contact information from [Source] indicating you might be interested in volunteering with us.
-
-Do you have a few minutes to talk about volunteer opportunities?
-
-[If YES]
-Great! We're currently looking for volunteers to help with [specific activities]. The time commitment is typically [hours per week/month], and we're very flexible with scheduling.
-
-What kind of volunteer work interests you most?
-
-[Listen and respond to their interests]
-
-[If NO]
-No problem! Would there be a better time I could call you back? Or if you prefer, I can send you an email with more information.`
-                    },
-                    {
-                        id: 'followup',
-                        title: 'Follow-up Script',
-                        content: `Hi [Contact Name], this is [Your Name] from [Organization Name]. We spoke [timeframe] about volunteer opportunities.
-
-I wanted to follow up and see if you had any questions or if you're ready to get started with volunteering?
-
-[Listen to response]
-
-[If interested]
-Wonderful! The next step would be to schedule an orientation session. We have sessions on [days/times]. Which would work best for you?
-
-[If unsure]
-That's completely understandable. What questions or concerns can I address for you?`
-                    }
+                    { id: 'intro', title: 'Introduction Script', content: `Hello, is this [Contact Name]?\n\nHi [Contact Name], my name is [Your Name] and I'm calling from [Organization Name]. We got your contact information from [Source] indicating you might be interested in volunteering with us.\n\nDo you have a few minutes to talk about volunteer opportunities?\n\n[If YES]\nGreat! We're currently looking for volunteers to help with [specific activities]. The time commitment is typically [hours per week/month], and we're very flexible with scheduling.\n\nWhat kind of volunteer work interests you most?\n\n[Listen and respond to their interests]\n\n[If NO]\nNo problem! Would there be a better time I could call you back? Or if you prefer, I can send you an email with more information.` },
+                    { id: 'followup', title: 'Follow-up Script', content: `Hi [Contact Name], this is [Your Name] from [Organization Name]. We spoke [timeframe] about volunteer opportunities.\n\nI wanted to follow up and see if you had any questions or if you're ready to get started with volunteering?\n\n[Listen to response]\n\n[If interested]\nWonderful! The next step would be to schedule an orientation session. We have sessions on [days/times]. Which would work best for you?\n\n[If unsure]\nThat's completely understandable. What questions or concerns can I address for you?` }
                 ];
 
                 // Save to localStorage
@@ -1684,16 +1578,15 @@ That's completely understandable. What questions or concerns can I address for y
             scripts = JSON.parse(localStorage.getItem('vcm_scripts') || '[]');
         }
 
-        // Helper Functions
-        function generateId() {
-            return Date.now().toString(36) + Math.random().toString(36).substring(2);
-        }
-
         function saveToLocalStorage() {
             localStorage.setItem('vcm_users', JSON.stringify(users));
             localStorage.setItem('vcm_contacts', JSON.stringify(contacts));
             localStorage.setItem('vcm_calls', JSON.stringify(calls));
             localStorage.setItem('vcm_scripts', JSON.stringify(scripts));
+        }
+
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substring(2);
         }
 
         function showToast(message, type = 'success') {
@@ -1723,66 +1616,83 @@ That's completely understandable. What questions or concerns can I address for y
         }
 
         // Authentication
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            const user = users.find(u => u.email === email && u.password === btoa(password));
-            
-            if (user) {
-                if (!user.active) {
-                    showToast('Your account has been deactivated. Contact an admin.', 'error');
-                    return;
+            if (isOnline) {
+                try {
+                    const { data: { user }, error } = await db.auth.signInWithPassword({
+                        email,
+                        password,
+                    });
+
+                    if (error) throw error;
+
+                    currentUser = user;
+                    await showDashboard();
+                    showToast(`Welcome back, ${user.user_metadata.name}!`);
+                } catch (error) {
+                    showToast(error.message || 'Invalid credentials. Please try again.', 'error');
                 }
-                
-                currentUser = user;
-                user.lastLogin = new Date().toISOString();
-                saveToLocalStorage();
-                localStorage.setItem('vcm_currentUser', JSON.stringify(user));
-                showDashboard();
-                showToast(`Welcome back, ${user.name}!`);
             } else {
-                showToast('Invalid credentials. Please try again.', 'error');
+                // Offline login
+                const user = users.find(u => u.email === email && u.password === btoa(password));
+                if (user) {
+                    if (!user.active) {
+                        showToast('Your account has been deactivated. Contact an admin.', 'error');
+                        return;
+                    }
+
+                    currentUser = user;
+                    user.lastLogin = new Date().toISOString();
+                    saveToLocalStorage();
+                    localStorage.setItem('vcm_currentUser', JSON.stringify(user));
+                    showDashboard();
+                    showToast(`Welcome back, ${user.name}! (Offline Mode)`);
+                } else {
+                    showToast('Invalid credentials. Please try again.', 'error');
+                }
             }
         });
 
-        function logout() {
+        async function logout() {
+            await db.auth.signOut();
             currentUser = null;
-            localStorage.removeItem('vcm_currentUser');
             document.getElementById('loginScreen').style.display = 'flex';
             document.getElementById('dashboard').style.display = 'none';
             showToast('Logged out successfully');
         }
 
-        function showDashboard() {
+        async function showDashboard() {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('dashboard').style.display = 'block';
             
             // Update user info
-            document.getElementById('userName').textContent = currentUser.name;
-            document.getElementById('userRole').textContent = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
-            document.getElementById('welcomeName').textContent = currentUser.name;
+            document.getElementById('userName').textContent = currentUser.user_metadata.name;
+            document.getElementById('userRole').textContent = currentUser.user_metadata.role.charAt(0).toUpperCase() + currentUser.user_metadata.role.slice(1);
+            document.getElementById('welcomeName').textContent = currentUser.user_metadata.name;
             
             // Show/hide tabs based on role
             updateTabVisibility();
             
             // Load initial data
-            loadDashboard();
-            loadCalls();
-            loadContacts();
-            loadCalendar();
+            await loadDashboard();
+            await loadCalls();
+            await loadContacts();
+            await loadCalendar();
             updateNotifications();
             
-            if (currentUser.role === 'manager' || currentUser.role === 'admin') {
-                loadTeamData();
+            if (currentUser.user_metadata.role === 'manager' || currentUser.user_metadata.role === 'admin') {
+                await loadTeamData();
             }
             
-            if (currentUser.role === 'admin') {
-                loadUsers();
+            if (currentUser.user_metadata.role === 'admin') {
+                await loadUsers();
             }
             
-            loadReports();
+            await loadReports();
         }
 
         function updateTabVisibility() {
@@ -1804,17 +1714,21 @@ That's completely understandable. What questions or concerns can I address for y
             usersTab.style.display = currentUser.role === 'admin' ? 'block' : 'none';
         }
 
-        function updateNotifications() {
+        async function updateNotifications() {
             // Count pending follow-ups
-            const followUps = calls.filter(c => 
-                c.userId === currentUser.id && 
-                c.followUpDate && 
-                new Date(c.followUpDate) <= new Date()
-            );
+            const { count, error } = await db.from('calls').select({ count: 'exact' })
+                .eq('userId', currentUser.id)
+                .not('followUpDate', 'is', null)
+                .lte('followUpDate', new Date().toISOString());
+
+            if (error) {
+                showToast(error.message, 'error');
+                return;
+            }
             
             const badge = document.getElementById('notificationBadge');
-            if (followUps.length > 0) {
-                badge.textContent = followUps.length;
+            if (count > 0) {
+                badge.textContent = count;
                 badge.style.display = 'inline-block';
             } else {
                 badge.style.display = 'none';
@@ -1865,9 +1779,14 @@ That's completely understandable. What questions or concerns can I address for y
         }
 
         // Dashboard Functions
-        function loadDashboard() {
+        async function loadDashboard() {
             // Calculate user stats
-            const userCalls = calls.filter(c => c.userId === currentUser.id);
+            const { data: userCalls, error: callsError } = await db.from('calls').select().eq('userId', currentUser.id);
+            if(callsError) {
+                showToast(callsError.message, 'error');
+                return;
+            }
+
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             
@@ -1888,7 +1807,11 @@ That's completely understandable. What questions or concerns can I address for y
                 c.followUpDate && new Date(c.followUpDate) >= new Date()
             ).length;
             
-            const assignedContacts = contacts.filter(c => c.assignedTo === currentUser.id).length;
+            const { count: assignedContacts, error: contactsError } = await db.from('contacts').select({ count: 'exact' }).eq('assignedTo', currentUser.id);
+            if(contactsError) {
+                showToast(contactsError.message, 'error');
+                return;
+            }
             
             // Update stats
             document.getElementById('todaysCalls').textContent = todaysCalls.length;
@@ -1904,14 +1827,20 @@ That's completely understandable. What questions or concerns can I address for y
             loadUpcomingFollowups();
         }
 
-        function loadRecentActivity() {
-            const recentCalls = calls
-                .filter(c => c.userId === currentUser.id)
-                .sort((a, b) => new Date(b.callDate) - new Date(a.callDate))
-                .slice(0, 5);
+        async function loadRecentActivity() {
+            const { data: recentCalls, error } = await db.from('calls')
+                .select('*, contact:contacts(*)')
+                .eq('userId', currentUser.id)
+                .order('callDate', { ascending: false })
+                .limit(5);
+
+            if (error) {
+                showToast(error.message, 'error');
+                return;
+            }
             
             const activityHTML = recentCalls.map(call => {
-                const contact = contacts.find(c => c.id === call.contactId);
+                const contact = call.contact;
                 return `
                     <div class="timeline-item">
                         <div class="timeline-content">
@@ -1926,12 +1855,19 @@ That's completely understandable. What questions or concerns can I address for y
             document.getElementById('recentActivity').innerHTML = activityHTML || '<p style="color: var(--gray);">No recent activity</p>';
         }
 
-        function loadUpcomingFollowups() {
-            const followUps = calls
-                .filter(c => c.userId === currentUser.id && c.followUpDate)
-                .sort((a, b) => new Date(a.followUpDate) - new Date(b.followUpDate))
-                .slice(0, 5);
-            
+        async function loadUpcomingFollowups() {
+            const { data: followUps, error } = await db.from('calls')
+                .select('*, contact:contacts(*)')
+                .eq('userId', currentUser.id)
+                .not('followUpDate', 'is', null)
+                .order('followUpDate', { ascending: true })
+                .limit(5);
+
+            if (error) {
+                showToast(error.message, 'error');
+                return;
+            }
+
             const tbody = document.getElementById('upcomingFollowupsBody');
             
             if (followUps.length === 0) {
@@ -1940,7 +1876,7 @@ That's completely understandable. What questions or concerns can I address for y
             }
             
             tbody.innerHTML = followUps.map(call => {
-                const contact = contacts.find(c => c.id === call.contactId);
+                const contact = call.contact;
                 const isOverdue = new Date(call.followUpDate) < new Date();
                 
                 return `
@@ -1962,48 +1898,98 @@ That's completely understandable. What questions or concerns can I address for y
         }
 
         // Load Functions
-        function loadCalls() {
+        async function loadCalls() {
             const tbody = document.getElementById('callsTableBody');
             const emptyState = document.getElementById('callsEmpty');
             
-            // Filter calls based on user role
-            let userCalls = calls;
-            if (currentUser.role === 'user') {
-                userCalls = calls.filter(call => call.userId === currentUser.id);
-            }
-            
-            if (userCalls.length === 0) {
-                tbody.style.display = 'none';
-                emptyState.style.display = 'block';
-                return;
-            }
-            
-            tbody.style.display = 'table-row-group';
-            emptyState.style.display = 'none';
-            
-            // Sort by date (newest first)
-            userCalls.sort((a, b) => new Date(b.callDate) - new Date(a.callDate));
-            
-            tbody.innerHTML = userCalls.map(call => {
-                const contact = contacts.find(c => c.id === call.contactId) || {};
-                const statusClass = getStatusClass(call.status);
+            if (isOnline) {
+                try {
+                    let query = db.from('calls').select('*, contact:contacts(*)');
+
+                    // Filter calls based on user role
+                    if (currentUser.user_metadata.role === 'user') {
+                        query = query.eq('userId', currentUser.id);
+                    }
+
+                    const { data: userCalls, error } = await query;
+
+                    if (error) throw error;
+
+                    if (userCalls.length === 0) {
+                        tbody.style.display = 'none';
+                        emptyState.style.display = 'block';
+                        return;
+                    }
+
+                    tbody.style.display = 'table-row-group';
+                    emptyState.style.display = 'none';
+
+                    // Sort by date (newest first)
+                    userCalls.sort((a, b) => new Date(b.callDate) - new Date(a.callDate));
+
+                    tbody.innerHTML = userCalls.map(call => {
+                        const contact = call.contact || {};
+                        const statusClass = getStatusClass(call.status);
+
+                        return `
+                            <tr>
+                                <td><input type="checkbox" class="checkbox call-checkbox" data-id="${call.id}"></td>
+                                <td>${contact.name || 'Unknown'}</td>
+                                <td>${contact.phone || 'N/A'}</td>
+                                <td><span class="status-badge ${statusClass}">${formatStatus(call.status)}</span></td>
+                                <td>${formatDate(call.callDate)}</td>
+                                <td>${call.duration || 0} min</td>
+                                <td>${call.notes || '-'}</td>
+                                <td>
+                                    <button class="action-btn" onclick="editCall('${call.id}')">✏️</button>
+                                    <button class="action-btn" onclick="deleteCall('${call.id}')" style="color: var(--danger);">🗑️</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } catch (error) {
+                    showToast(error.message, 'error');
+                }
+            } else {
+                // Offline
+                let userCalls = calls;
+                if (currentUser.role === 'user') {
+                    userCalls = calls.filter(call => call.userId === currentUser.id);
+                }
                 
-                return `
-                    <tr>
-                        <td><input type="checkbox" class="checkbox call-checkbox" data-id="${call.id}"></td>
-                        <td>${contact.name || 'Unknown'}</td>
-                        <td>${contact.phone || 'N/A'}</td>
-                        <td><span class="status-badge ${statusClass}">${formatStatus(call.status)}</span></td>
-                        <td>${formatDate(call.callDate)}</td>
-                        <td>${call.duration || 0} min</td>
-                        <td>${call.notes || '-'}</td>
-                        <td>
-                            <button class="action-btn" onclick="editCall('${call.id}')">✏️</button>
-                            <button class="action-btn" onclick="deleteCall('${call.id}')" style="color: var(--danger);">🗑️</button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+                if (userCalls.length === 0) {
+                    tbody.style.display = 'none';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                tbody.style.display = 'table-row-group';
+                emptyState.style.display = 'none';
+
+                // Sort by date (newest first)
+                userCalls.sort((a, b) => new Date(b.callDate) - new Date(a.callDate));
+
+                tbody.innerHTML = userCalls.map(call => {
+                    const contact = contacts.find(c => c.id === call.contactId) || {};
+                    const statusClass = getStatusClass(call.status);
+
+                    return `
+                        <tr>
+                            <td><input type="checkbox" class="checkbox call-checkbox" data-id="${call.id}"></td>
+                            <td>${contact.name || 'Unknown'}</td>
+                            <td>${contact.phone || 'N/A'}</td>
+                            <td><span class="status-badge ${statusClass}">${formatStatus(call.status)}</span></td>
+                            <td>${formatDate(call.callDate)}</td>
+                            <td>${call.duration || 0} min</td>
+                            <td>${call.notes || '-'}</td>
+                            <td>
+                                <button class="action-btn" onclick="editCall('${call.id}')">✏️</button>
+                                <button class="action-btn" onclick="deleteCall('${call.id}')" style="color: var(--danger);">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
             
             // Add checkbox listeners
             document.querySelectorAll('.call-checkbox').forEach(checkbox => {
@@ -2018,82 +2004,168 @@ That's completely understandable. What questions or concerns can I address for y
             });
         }
 
-        function loadContacts() {
+        async function loadContacts() {
             const tbody = document.getElementById('contactsTableBody');
             const emptyState = document.getElementById('contactsEmpty');
             const assignSelect = document.getElementById('assignTo');
-            
-            if (contacts.length === 0) {
-                tbody.style.display = 'none';
-                emptyState.style.display = 'block';
-                return;
-            }
-            
-            tbody.style.display = 'table-row-group';
-            emptyState.style.display = 'none';
-            
-            // Update assign dropdown
-            const volunteers = users.filter(u => u.role === 'user');
-            assignSelect.innerHTML = '<option value="">Unassigned</option>' + 
-                volunteers.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
-            
-            // Update batch assign dropdown
-            const batchAssignUser = document.getElementById('batchAssignUser');
-            batchAssignUser.innerHTML = volunteers.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
-            
-            // Update unassigned count
-            const unassignedCount = contacts.filter(c => !c.assignedTo).length;
-            document.getElementById('unassignedCount').textContent = unassignedCount;
-            
-            tbody.innerHTML = contacts.map(contact => {
-                const assignedUser = users.find(u => u.id === contact.assignedTo);
-                const contactCalls = calls.filter(c => c.contactId === contact.id);
-                const lastCall = contactCalls.sort((a, b) => new Date(b.callDate) - new Date(a.callDate))[0];
-                const callCount = contactCalls.length;
-                
-                const tags = (contact.tags || []).map(tag => 
-                    `<span class="tag tag-primary">${tag}</span>`
-                ).join('');
-                
-                return `
-                    <tr>
-                        <td><input type="checkbox" class="checkbox contact-checkbox" data-id="${contact.id}"></td>
-                        <td>${contact.name}</td>
-                        <td>${contact.phone}</td>
-                        <td>${contact.email || '-'}</td>
-                        <td>${tags || '-'}</td>
-                        <td>${assignedUser ? assignedUser.name : 'Unassigned'}</td>
-                        <td>${lastCall ? formatDate(lastCall.callDate) : 'Never'}</td>
-                        <td>${callCount}</td>
-                        <td>
-                            <button class="action-btn" onclick="callContact('${contact.id}')" title="Call">📞</button>
-                            <button class="action-btn" onclick="viewContactHistory('${contact.id}')" title="History">📊</button>
-                            <button class="action-btn" onclick="editContact('${contact.id}')" title="Edit">✏️</button>
-                            <button class="action-btn" onclick="deleteContact('${contact.id}')" style="color: var(--danger);" title="Delete">🗑️</button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
 
-            // Update call contact dropdown
-            const callContactSelect = document.getElementById('callContact');
-            let availableContacts = contacts;
-            
-            if (currentUser.role === 'user') {
-                availableContacts = contacts.filter(c => c.assignedTo === currentUser.id);
+            if (isOnline) {
+                try {
+                    const { data: contacts, error: contactsError } = await db.from('contacts').select('*, user:users(*)');
+                    if (contactsError) throw contactsError;
+
+                    const { data: allCalls, error: callsError } = await db.from('calls').select();
+                    if (callsError) throw callsError;
+
+                    if (contacts.length === 0) {
+                        tbody.style.display = 'none';
+                        emptyState.style.display = 'block';
+                        return;
+                    }
+
+                    tbody.style.display = 'table-row-group';
+                    emptyState.style.display = 'none';
+
+                    // Update assign dropdown
+                    const { data: volunteers } = await db.from('users').select().eq('user_metadata->>role', 'user');
+                    assignSelect.innerHTML = '<option value="">Unassigned</option>' +
+                        volunteers.map(v => `<option value="${v.id}">${v.user_metadata.name}</option>`).join('');
+
+                    // Update batch assign dropdown
+                    const batchAssignUser = document.getElementById('batchAssignUser');
+                    batchAssignUser.innerHTML = volunteers.map(v => `<option value="${v.id}">${v.user_metadata.name}</option>`).join('');
+
+                    // Update unassigned count
+                    const { count: unassignedCount } = await db.from('contacts').select({ count: 'exact' }).is('assignedTo', null);
+                    document.getElementById('unassignedCount').textContent = unassignedCount;
+
+                    tbody.innerHTML = contacts.map(contact => {
+                        const assignedUser = contact.user;
+                        const contactCalls = allCalls.filter(c => c.contactId === contact.id);
+                        const lastCall = contactCalls.sort((a, b) => new Date(b.callDate) - new Date(a.callDate))[0];
+                        const callCount = contactCalls.length;
+
+                        const tags = (contact.tags || []).map(tag =>
+                            `<span class="tag tag-primary">${tag}</span>`
+                        ).join('');
+
+                        return `
+                            <tr>
+                                <td><input type="checkbox" class="checkbox contact-checkbox" data-id="${contact.id}"></td>
+                                <td>${contact.name}</td>
+                                <td>${contact.phone}</td>
+                                <td>${contact.email || '-'}</td>
+                                <td>${tags || '-'}</td>
+                                <td>${assignedUser ? assignedUser.user_metadata.name : 'Unassigned'}</td>
+                                <td>${lastCall ? formatDate(lastCall.callDate) : 'Never'}</td>
+                                <td>${callCount}</td>
+                                <td>
+                                    <button class="action-btn" onclick="callContact('${contact.id}')" title="Call">📞</button>
+                                    <button class="action-btn" onclick="viewContactHistory('${contact.id}')" title="History">📊</button>
+                                    <button class="action-btn" onclick="editContact('${contact.id}')" title="Edit">✏️</button>
+                                    <button class="action-btn" onclick="deleteContact('${contact.id}')" style="color: var(--danger);" title="Delete">🗑️</button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                    // Update call contact dropdown
+                    const callContactSelect = document.getElementById('callContact');
+                    let availableContacts = contacts;
+
+                    if (currentUser.user_metadata.role === 'user') {
+                        const { data: assignedContacts } = await db.from('contacts').select().eq('assignedTo', currentUser.id);
+                        availableContacts = assignedContacts;
+                    }
+
+                    callContactSelect.innerHTML = '<option value="">Select contact...</option>' +
+                        availableContacts.map(c => `<option value="${c.id}">${c.name} - ${c.phone}</option>`).join('');
+
+                    // Update quick call contacts list
+                    const quickCallList = document.getElementById('quickCallContactsList');
+                    quickCallList.innerHTML = availableContacts.map(c => `
+                        <label style="display: block; padding: 5px;">
+                            <input type="checkbox" value="${c.id}" style="margin-right: 10px;">
+                            ${c.name} - ${c.phone}
+                        </label>
+                    `).join('');
+                } catch (error) {
+                    showToast(error.message, 'error');
+                }
+            } else {
+                // Offline
+                if (contacts.length === 0) {
+                    tbody.style.display = 'none';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+                
+                tbody.style.display = 'table-row-group';
+                emptyState.style.display = 'none';
+                
+                // Update assign dropdown
+                const volunteers = users.filter(u => u.role === 'user');
+                assignSelect.innerHTML = '<option value="">Unassigned</option>' +
+                    volunteers.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+
+                // Update batch assign dropdown
+                const batchAssignUser = document.getElementById('batchAssignUser');
+                batchAssignUser.innerHTML = volunteers.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+
+                // Update unassigned count
+                const unassignedCount = contacts.filter(c => !c.assignedTo).length;
+                document.getElementById('unassignedCount').textContent = unassignedCount;
+
+                tbody.innerHTML = contacts.map(contact => {
+                    const assignedUser = users.find(u => u.id === contact.assignedTo);
+                    const contactCalls = calls.filter(c => c.contactId === contact.id);
+                    const lastCall = contactCalls.sort((a, b) => new Date(b.callDate) - new Date(a.callDate))[0];
+                    const callCount = contactCalls.length;
+
+                    const tags = (contact.tags || []).map(tag =>
+                        `<span class="tag tag-primary">${tag}</span>`
+                    ).join('');
+
+                    return `
+                        <tr>
+                            <td><input type="checkbox" class="checkbox contact-checkbox" data-id="${contact.id}"></td>
+                            <td>${contact.name}</td>
+                            <td>${contact.phone}</td>
+                            <td>${contact.email || '-'}</td>
+                            <td>${tags || '-'}</td>
+                            <td>${assignedUser ? assignedUser.name : 'Unassigned'}</td>
+                            <td>${lastCall ? formatDate(lastCall.callDate) : 'Never'}</td>
+                            <td>${callCount}</td>
+                            <td>
+                                <button class="action-btn" onclick="callContact('${contact.id}')" title="Call">📞</button>
+                                <button class="action-btn" onclick="viewContactHistory('${contact.id}')" title="History">📊</button>
+                                <button class="action-btn" onclick="editContact('${contact.id}')" title="Edit">✏️</button>
+                                <button class="action-btn" onclick="deleteContact('${contact.id}')" style="color: var(--danger);" title="Delete">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                // Update call contact dropdown
+                const callContactSelect = document.getElementById('callContact');
+                let availableContacts = contacts;
+
+                if (currentUser.role === 'user') {
+                    availableContacts = contacts.filter(c => c.assignedTo === currentUser.id);
+                }
+
+                callContactSelect.innerHTML = '<option value="">Select contact...</option>' +
+                    availableContacts.map(c => `<option value="${c.id}">${c.name} - ${c.phone}</option>`).join('');
+
+                // Update quick call contacts list
+                const quickCallList = document.getElementById('quickCallContactsList');
+                quickCallList.innerHTML = availableContacts.map(c => `
+                    <label style="display: block; padding: 5px;">
+                        <input type="checkbox" value="${c.id}" style="margin-right: 10px;">
+                        ${c.name} - ${c.phone}
+                    </label>
+                `).join('');
             }
-            
-            callContactSelect.innerHTML = '<option value="">Select contact...</option>' +
-                availableContacts.map(c => `<option value="${c.id}">${c.name} - ${c.phone}</option>`).join('');
-            
-            // Update quick call contacts list
-            const quickCallList = document.getElementById('quickCallContactsList');
-            quickCallList.innerHTML = availableContacts.map(c => `
-                <label style="display: block; padding: 5px;">
-                    <input type="checkbox" value="${c.id}" style="margin-right: 10px;">
-                    ${c.name} - ${c.phone}
-                </label>
-            `).join('');
         }
 
         function loadScripts() {
@@ -2166,10 +2238,20 @@ That's completely understandable. What questions or concerns can I address for y
             loadCalendar();
         }
 
-        function loadTeamData() {
+        async function loadTeamData() {
             const tbody = document.getElementById('teamTableBody');
-            const volunteers = users.filter(u => u.role === 'user');
-            
+            const { data: volunteers, error: usersError } = await db.from('users').select().eq('user_metadata->>role', 'user');
+            if (usersError) {
+                showToast(usersError.message, 'error');
+                return;
+            }
+
+            const { data: allCalls, error: callsError } = await db.from('calls').select();
+            if (callsError) {
+                showToast(callsError.message, 'error');
+                return;
+            }
+
             // Calculate team statistics
             let totalTeamCalls = 0;
             let totalSuccessful = 0;
@@ -2178,7 +2260,7 @@ That's completely understandable. What questions or concerns can I address for y
             
             // Create leaderboard data
             const leaderboard = volunteers.map(volunteer => {
-                const userCalls = calls.filter(c => c.userId === volunteer.id);
+                const userCalls = allCalls.filter(c => c.userId === volunteer.id);
                 const successful = userCalls.filter(c => c.status === 'completed').length;
                 const followups = userCalls.filter(c => c.status === 'follow-up').length;
                 const totalUserDuration = userCalls.reduce((sum, c) => sum + (c.duration || 0), 0);
@@ -2222,7 +2304,7 @@ That's completely understandable. What questions or concerns can I address for y
                 return `
                     <tr ${index < 3 ? 'style="background: rgba(76, 175, 80, 0.05);"' : ''}>
                         <td style="font-size: 20px; text-align: center;">${medal}</td>
-                        <td><strong>${data.volunteer.name}</strong></td>
+                        <td><strong>${data.volunteer.user_metadata.name}</strong></td>
                         <td>${data.totalCalls}</td>
                         <td>${data.successful}</td>
                         <td>${data.successRate}%</td>
@@ -2237,7 +2319,7 @@ That's completely understandable. What questions or concerns can I address for y
             drawPerformanceChart();
         }
 
-        function drawPerformanceChart() {
+        async function drawPerformanceChart() {
             const canvas = document.getElementById('performanceChart');
             if (!canvas) return;
             
@@ -2254,14 +2336,14 @@ That's completely understandable. What questions or concerns can I address for y
                 
                 const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
                 days.push(dayName);
+
+                const { count, error } = await db.from('calls').select({count: 'exact'}).gte('callDate', date.toISOString()).lt('callDate', new Date(date.getTime() + 24 * 60 * 60 * 1000).toISOString());
+                if(error) {
+                    showToast(error.message, 'error');
+                    return;
+                }
                 
-                const dayCalls = calls.filter(c => {
-                    const callDate = new Date(c.callDate);
-                    callDate.setHours(0, 0, 0, 0);
-                    return callDate.getTime() === date.getTime();
-                }).length;
-                
-                data.push(dayCalls);
+                data.push(count);
             }
             
             // Clear and setup canvas
@@ -2343,40 +2425,92 @@ That's completely understandable. What questions or concerns can I address for y
             });
         }
 
-        function loadUsers() {
+        async function loadUsers() {
             const tbody = document.getElementById('usersTableBody');
             
-            tbody.innerHTML = users.map(user => {
-                const userCalls = calls.filter(c => c.userId === user.id).length;
-                const statusClass = user.active ? 'status-active' : 'status-inactive';
-                const statusText = user.active ? 'Active' : 'Inactive';
-                
-                return `
-                    <tr>
-                        <td>${user.name}</td>
-                        <td>${user.email}</td>
-                        <td>${user.role.charAt(0).toUpperCase() + user.role.slice(1)}</td>
-                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                        <td>${userCalls}</td>
-                        <td>${formatDate(user.lastLogin)}</td>
-                        <td>${formatDate(user.createdAt)}</td>
-                        <td>
-                            <button class="action-btn" onclick="toggleUserStatus('${user.id}')" title="${user.active ? 'Deactivate' : 'Activate'}">${user.active ? '🚫' : '✅'}</button>
-                            <button class="action-btn" onclick="resetPassword('${user.id}')" title="Reset Password">🔑</button>
-                            ${user.id !== currentUser.id ? `<button class="action-btn" onclick="deleteUser('${user.id}')" style="color: var(--danger);" title="Delete">🗑️</button>` : ''}
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+            if (isOnline) {
+                try {
+                    const { data: users, error: usersError } = await db.from('users').select();
+                    if (usersError) throw usersError;
+
+                    const { data: allCalls, error: callsError } = await db.from('calls').select();
+                    if (callsError) throw callsError;
+
+                    tbody.innerHTML = users.map(user => {
+                        const userCalls = allCalls.filter(c => c.userId === user.id).length;
+                        const statusClass = user.aud === 'authenticated' ? 'status-active' : 'status-inactive';
+                        const statusText = user.aud === 'authenticated' ? 'Active' : 'Inactive';
+
+                        return `
+                            <tr>
+                                <td>${user.user_metadata.name}</td>
+                                <td>${user.email}</td>
+                                <td>${user.user_metadata.role.charAt(0).toUpperCase() + user.user_metadata.role.slice(1)}</td>
+                                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                                <td>${userCalls}</td>
+                                <td>${formatDate(user.last_sign_in_at)}</td>
+                                <td>${formatDate(user.created_at)}</td>
+                                <td>
+                                    <button class="action-btn" onclick="toggleUserStatus('${user.id}')" title="${user.aud === 'authenticated' ? 'Deactivate' : 'Activate'}">${user.aud === 'authenticated' ? '🚫' : '✅'}</button>
+                                    <button class="action-btn" onclick="resetPassword('${user.id}')" title="Reset Password">🔑</button>
+                                    ${user.id !== currentUser.id ? `<button class="action-btn" onclick="deleteUser('${user.id}')" style="color: var(--danger);" title="Delete">🗑️</button>` : ''}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } catch (error) {
+                    showToast(error.message, 'error');
+                }
+            } else {
+                // Offline
+                tbody.innerHTML = users.map(user => {
+                    const userCalls = calls.filter(c => c.userId === user.id).length;
+                    const statusClass = user.active ? 'status-active' : 'status-inactive';
+                    const statusText = user.active ? 'Active' : 'Inactive';
+
+                    return `
+                        <tr>
+                            <td>${user.name}</td>
+                            <td>${user.email}</td>
+                            <td>${user.role.charAt(0).toUpperCase() + user.role.slice(1)}</td>
+                            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                            <td>${userCalls}</td>
+                            <td>${formatDate(user.lastLogin)}</td>
+                            <td>${formatDate(user.createdAt)}</td>
+                            <td>
+                                <button class="action-btn" onclick="toggleUserStatus('${user.id}')" title="${user.active ? 'Deactivate' : 'Activate'}">${user.active ? '🚫' : '✅'}</button>
+                                <button class="action-btn" onclick="resetPassword('${user.id}')" title="Reset Password">🔑</button>
+                                ${user.id !== currentUser.id ? `<button class="action-btn" onclick="deleteUser('${user.id}')" style="color: var(--danger);" title="Delete">🗑️</button>` : ''}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
         }
 
-        function loadReports() {
+        async function loadReports() {
             // Calculate overall statistics
-            const totalCallsCount = calls.length;
-            const totalContactsCount = contacts.length;
-            const successfulCalls = calls.filter(c => c.status === 'completed').length;
+            const { count: totalCallsCount, error: callsError } = await db.from('calls').select({ count: 'exact' });
+            if(callsError) {
+                showToast(callsError.message, 'error');
+                return;
+            }
+            const { count: totalContactsCount, error: contactsError } = await db.from('contacts').select({ count: 'exact' });
+            if(contactsError) {
+                showToast(contactsError.message, 'error');
+                return;
+            }
+            const { count: successfulCalls, error: successfulCallsError } = await db.from('calls').select({ count: 'exact' }).eq('status', 'completed');
+            if(successfulCallsError) {
+                showToast(successfulCallsError.message, 'error');
+                return;
+            }
             const conversionRate = totalCallsCount > 0 ? Math.round((successfulCalls / totalCallsCount) * 100) : 0;
-            const activeVolunteersCount = users.filter(u => u.role === 'user' && u.active).length;
+            const { count: activeVolunteersCount, error: usersError } = await db.from('users').select({ count: 'exact' }).eq('user_metadata->>role', 'user').eq('aud', 'authenticated');
+            if(usersError) {
+                showToast(usersError.message, 'error');
+                return;
+            }
             
             // Update stat cards
             document.getElementById('totalCalls').textContent = totalCallsCount;
@@ -2388,17 +2522,18 @@ That's completely understandable. What questions or concerns can I address for y
             drawStatusChart();
         }
 
-        function drawStatusChart() {
+        async function drawStatusChart() {
             const canvas = document.getElementById('statusChart');
             if (!canvas) return;
             
             const ctx = canvas.getContext('2d');
             
             // Count calls by status
-            const statusCounts = {};
-            calls.forEach(call => {
-                statusCounts[call.status] = (statusCounts[call.status] || 0) + 1;
-            });
+            const { data: statusCounts, error } = await db.from('calls').select('status, count:status').group('status');
+            if(error) {
+                showToast(error.message, 'error');
+                return;
+            }
             
             // Setup canvas
             canvas.width = canvas.offsetWidth;
@@ -2513,7 +2648,7 @@ That's completely understandable. What questions or concerns can I address for y
         }
 
         // Form Submissions
-        document.getElementById('callForm').addEventListener('submit', function(e) {
+        document.getElementById('callForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const callId = document.getElementById('callId').value;
@@ -2526,31 +2661,40 @@ That's completely understandable. What questions or concerns can I address for y
                 followUpDate: document.getElementById('followUpDate').value || null
             };
             
-            if (callId) {
-                // Edit existing call
-                const callIndex = calls.findIndex(c => c.id === callId);
-                if (callIndex !== -1) {
-                    calls[callIndex] = { ...calls[callIndex], ...callData };
-                    showToast('Call updated successfully');
+            if (isOnline) {
+                try {
+                    let error;
+                    if (callId) {
+                        // Edit existing call
+                        ({ error } = await db.from('calls').update(callData).eq('id', callId));
+                    } else {
+                        // Create new call
+                        ({ error } = await db.from('calls').insert([callData]));
+                    }
+                    if(error) throw error;
+                    showToast(callId ? 'Call updated successfully' : 'Call logged successfully');
+                } catch (error) {
+                    showToast(error.message, 'error');
                 }
             } else {
-                // Create new call
-                const newCall = {
-                    id: generateId(),
-                    ...callData,
-                    callDate: new Date().toISOString()
-                };
-                calls.push(newCall);
-                showToast('Call logged successfully');
+                // Offline
+                if (callId) {
+                    const callIndex = calls.findIndex(c => c.id === callId);
+                    if (callIndex !== -1) {
+                        calls[callIndex] = { ...calls[callIndex], ...callData };
+                    }
+                } else {
+                    const newCall = { id: generateId(), ...callData, callDate: new Date().toISOString() };
+                    calls.push(newCall);
+                }
+                saveToLocalStorage();
+                showToast(callId ? 'Call updated successfully (Offline)' : 'Call logged successfully (Offline)');
             }
-            
-            saveToLocalStorage();
+
             loadCalls();
             loadDashboard();
             updateNotifications();
             closeModal('callModal');
-            
-            // Reset form
             this.reset();
         });
 
@@ -2586,7 +2730,7 @@ That's completely understandable. What questions or concerns can I address for y
             }
         });
 
-        document.getElementById('contactForm').addEventListener('submit', function(e) {
+        document.getElementById('contactForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const contactId = document.getElementById('contactId').value;
@@ -2602,29 +2746,38 @@ That's completely understandable. What questions or concerns can I address for y
                 status: 'active'
             };
             
-            if (contactId) {
-                // Edit existing contact
-                const contactIndex = contacts.findIndex(c => c.id === contactId);
-                if (contactIndex !== -1) {
-                    contacts[contactIndex] = { ...contacts[contactIndex], ...contactData };
-                    showToast('Contact updated successfully');
+            if (isOnline) {
+                try {
+                    let error;
+                    if (contactId) {
+                        // Edit existing contact
+                        ({ error } = await db.from('contacts').update(contactData).eq('id', contactId));
+                    } else {
+                        // Create new contact
+                        ({ error } = await db.from('contacts').insert([contactData]));
+                    }
+                    if(error) throw error;
+                    showToast(contactId ? 'Contact updated successfully' : 'Contact added successfully');
+                } catch (error) {
+                    showToast(error.message, 'error');
                 }
             } else {
-                // Create new contact
-                const newContact = {
-                    id: generateId(),
-                    ...contactData,
-                    createdAt: new Date().toISOString()
-                };
-                contacts.push(newContact);
-                showToast('Contact added successfully');
+                // Offline
+                if (contactId) {
+                    const contactIndex = contacts.findIndex(c => c.id === contactId);
+                    if (contactIndex !== -1) {
+                        contacts[contactIndex] = { ...contacts[contactIndex], ...contactData };
+                    }
+                } else {
+                    const newContact = { id: generateId(), ...contactData, createdAt: new Date().toISOString() };
+                    contacts.push(newContact);
+                }
+                saveToLocalStorage();
+                showToast(contactId ? 'Contact updated successfully (Offline)' : 'Contact added successfully (Offline)');
             }
             
-            saveToLocalStorage();
             loadContacts();
             closeModal('contactModal');
-            
-            // Reset form
             this.reset();
         });
 
@@ -2669,13 +2822,24 @@ That's completely understandable. What questions or concerns can I address for y
             document.getElementById('callModal').classList.add('show');
         }
 
-        function deleteCall(callId) {
+        async function deleteCall(callId) {
             if (confirm('Are you sure you want to delete this call?')) {
-                calls = calls.filter(c => c.id !== callId);
-                saveToLocalStorage();
+                if (isOnline) {
+                    try {
+                        const { error } = await db.from('calls').delete().eq('id', callId);
+                        if (error) throw error;
+                        showToast('Call deleted');
+                    } catch (error) {
+                        showToast(error.message, 'error');
+                    }
+                } else {
+                    // Offline
+                    calls = calls.filter(c => c.id !== callId);
+                    saveToLocalStorage();
+                    showToast('Call deleted (Offline)');
+                }
                 loadCalls();
                 loadDashboard();
-                showToast('Call deleted');
             }
         }
 
@@ -2700,14 +2864,29 @@ That's completely understandable. What questions or concerns can I address for y
             document.getElementById('contactModal').classList.add('show');
         }
 
-        function deleteContact(contactId) {
+        async function deleteContact(contactId) {
             if (confirm('Are you sure you want to delete this contact? All related calls will also be deleted.')) {
-                contacts = contacts.filter(c => c.id !== contactId);
-                calls = calls.filter(c => c.contactId !== contactId);
-                saveToLocalStorage();
+                if (isOnline) {
+                    try {
+                        const { error: callError } = await db.from('calls').delete().eq('contactId', contactId);
+                        if (callError) throw callError;
+
+                        const { error: contactError } = await db.from('contacts').delete().eq('id', contactId);
+                        if (contactError) throw contactError;
+
+                        showToast('Contact deleted');
+                    } catch (error) {
+                        showToast(error.message, 'error');
+                    }
+                } else {
+                    // Offline
+                    contacts = contacts.filter(c => c.id !== contactId);
+                    calls = calls.filter(c => c.contactId !== contactId);
+                    saveToLocalStorage();
+                    showToast('Contact deleted (Offline)');
+                }
                 loadContacts();
                 loadCalls();
-                showToast('Contact deleted');
             }
         }
 
@@ -2715,11 +2894,18 @@ That's completely understandable. What questions or concerns can I address for y
             showCallModal(contactId);
         }
 
-        function viewContactHistory(contactId) {
-            const contact = contacts.find(c => c.id === contactId);
-            if (!contact) return;
-            
-            const contactCalls = calls.filter(c => c.contactId === contactId);
+        async function viewContactHistory(contactId) {
+            const { data: contact, error: contactError } = await db.from('contacts').select().eq('id', contactId).single();
+            if(contactError) {
+                showToast(contactError.message, 'error');
+                return;
+            }
+
+            const { data: contactCalls, error: callsError } = await db.from('calls').select().eq('contactId', contactId);
+            if(callsError) {
+                showToast(callsError.message, 'error');
+                return;
+            }
             
             let historyHTML = `<h3>Call History for ${contact.name}</h3>`;
             if (contactCalls.length === 0) {
@@ -2797,10 +2983,19 @@ That's completely understandable. What questions or concerns can I address for y
             specificGroup.style.display = method === 'specific' ? 'block' : 'none';
         }
 
-        function processBatchAssign() {
+        async function processBatchAssign() {
             const method = document.getElementById('assignMethod').value;
-            const unassignedContacts = contacts.filter(c => !c.assignedTo);
-            const volunteers = users.filter(u => u.role === 'user' && u.active);
+            const { data: unassignedContacts, error: unassignedError } = await db.from('contacts').select().is('assignedTo', null);
+            if(unassignedError) {
+                showToast(unassignedError.message, 'error');
+                return;
+            }
+
+            const { data: volunteers, error: usersError } = await db.from('users').select().eq('user_metadata->>role', 'user').eq('aud', 'authenticated');
+            if(usersError) {
+                showToast(usersError.message, 'error');
+                return;
+            }
             
             if (unassignedContacts.length === 0) {
                 showToast('No unassigned contacts to assign', 'warning');
@@ -2819,35 +3014,46 @@ That's completely understandable. What questions or concerns can I address for y
                     const contactsPerVolunteer = Math.ceil(unassignedContacts.length / volunteers.length);
                     let volunteerIndex = 0;
                     
-                    unassignedContacts.forEach(contact => {
-                        contact.assignedTo = volunteers[volunteerIndex].id;
-                        assigned++;
+                    for(const contact of unassignedContacts) {
+                        const { error } = await db.from('contacts').update({ assignedTo: volunteers[volunteerIndex].id }).eq('id', contact.id);
+                        if(error) {
+                            showToast(error.message, 'error');
+                        } else {
+                            assigned++;
+                        }
                         
                         if (assigned % contactsPerVolunteer === 0 && volunteerIndex < volunteers.length - 1) {
                             volunteerIndex++;
                         }
-                    });
+                    }
                     break;
                     
                 case 'specific':
                     const selectedUserId = document.getElementById('batchAssignUser').value;
-                    unassignedContacts.forEach(contact => {
-                        contact.assignedTo = selectedUserId;
-                        assigned++;
-                    });
+                    for(const contact of unassignedContacts) {
+                        const { error } = await db.from('contacts').update({ assignedTo: selectedUserId }).eq('id', contact.id);
+                        if(error) {
+                            showToast(error.message, 'error');
+                        } else {
+                            assigned++;
+                        }
+                    }
                     break;
                     
                 case 'round-robin':
                     let rrIndex = 0;
-                    unassignedContacts.forEach(contact => {
-                        contact.assignedTo = volunteers[rrIndex].id;
-                        assigned++;
+                    for(const contact of unassignedContacts) {
+                        const { error } = await db.from('contacts').update({ assignedTo: volunteers[rrIndex].id }).eq('id', contact.id);
+                        if(error) {
+                            showToast(error.message, 'error');
+                        } else {
+                            assigned++;
+                        }
                         rrIndex = (rrIndex + 1) % volunteers.length;
-                    });
+                    }
                     break;
             }
             
-            saveToLocalStorage();
             loadContacts();
             closeModal('batchAssignModal');
             showToast(`${assigned} contacts assigned successfully`);
@@ -3023,10 +3229,14 @@ Thank you so much for your time today, [Contact Name]. We really appreciate your
         }
 
         // Export Functions
-        function exportMyCalls() {
-            const userCalls = calls.filter(c => c.userId === currentUser.id);
+        async function exportMyCalls() {
+            const { data: userCalls, error } = await db.from('calls').select('*, contact:contacts(*)').eq('userId', currentUser.id);
+            if (error) {
+                showToast(error.message, 'error');
+                return;
+            }
             exportToCSV(userCalls.map(call => {
-                const contact = contacts.find(c => c.id === call.contactId);
+                const contact = call.contact;
                 return {
                     Date: formatDate(call.callDate),
                     Contact: contact?.name || 'Unknown',
@@ -3039,13 +3249,18 @@ Thank you so much for your time today, [Contact Name]. We really appreciate your
             }), 'my-calls.csv');
         }
 
-        function exportFullReport() {
-            const report = calls.map(call => {
-                const contact = contacts.find(c => c.id === call.contactId);
-                const user = users.find(u => u.id === call.userId);
+        async function exportFullReport() {
+            const { data: report, error } = await db.from('calls').select('*, contact:contacts(*), user:users(*)');
+            if (error) {
+                showToast(error.message, 'error');
+                return;
+            }
+            exportToCSV(report.map(call => {
+                const contact = call.contact;
+                const user = call.user;
                 return {
                     Date: formatDate(call.callDate),
-                    Volunteer: user?.name || 'Unknown',
+                    Volunteer: user?.user_metadata.name || 'Unknown',
                     Contact: contact?.name || 'Unknown',
                     Phone: contact?.phone || 'N/A',
                     Status: formatStatus(call.status),
@@ -3053,14 +3268,18 @@ Thank you so much for your time today, [Contact Name]. We really appreciate your
                     Notes: call.notes || '',
                     FollowUp: call.followUpDate ? formatDate(call.followUpDate) : ''
                 };
-            });
-            exportToCSV(report, 'full-report.csv');
+            }), 'full-report.csv');
         }
 
-        function exportContactsReport() {
-            const report = contacts.map(contact => {
-                const assignedUser = users.find(u => u.id === contact.assignedTo);
-                const contactCalls = calls.filter(c => c.contactId === contact.id);
+        async function exportContactsReport() {
+            const { data: report, error } = await db.from('contacts').select('*, user:users(*), calls:calls(*)');
+            if (error) {
+                showToast(error.message, 'error');
+                return;
+            }
+            exportToCSV(report.map(contact => {
+                const assignedUser = contact.user;
+                const contactCalls = contact.calls;
                 const lastCall = contactCalls.sort((a, b) => new Date(b.callDate) - new Date(a.callDate))[0];
                 
                 return {
@@ -3068,35 +3287,43 @@ Thank you so much for your time today, [Contact Name]. We really appreciate your
                     Phone: contact.phone,
                     Email: contact.email || '',
                     Tags: (contact.tags || []).join('; '),
-                    AssignedTo: assignedUser?.name || 'Unassigned',
+                    AssignedTo: assignedUser?.user_metadata.name || 'Unassigned',
                     TotalCalls: contactCalls.length,
                     LastCalled: lastCall ? formatDate(lastCall.callDate) : 'Never',
                     Status: contact.status,
                     Notes: contact.notes || ''
                 };
-            });
-            exportToCSV(report, 'contacts-report.csv');
+            }), 'contacts-report.csv');
         }
 
         function exportCallsReport() {
             exportFullReport();
         }
 
-        function exportTeamReport() {
-            const volunteers = users.filter(u => u.role === 'user');
+        async function exportTeamReport() {
+            const { data: volunteers, error: usersError } = await db.from('users').select().eq('user_metadata->>role', 'user');
+            if(usersError) {
+                showToast(usersError.message, 'error');
+                return;
+            }
+            const { data: allCalls, error: callsError } = await db.from('calls').select();
+            if(callsError) {
+                showToast(callsError.message, 'error');
+                return;
+            }
             const report = volunteers.map(volunteer => {
-                const userCalls = calls.filter(c => c.userId === volunteer.id);
+                const userCalls = allCalls.filter(c => c.userId === volunteer.id);
                 const successful = userCalls.filter(c => c.status === 'completed').length;
                 const successRate = userCalls.length > 0 ? Math.round((successful / userCalls.length) * 100) : 0;
                 
                 return {
-                    Volunteer: volunteer.name,
+                    Volunteer: volunteer.user_metadata.name,
                     Email: volunteer.email,
-                    Status: volunteer.active ? 'Active' : 'Inactive',
+                    Status: volunteer.aud === 'authenticated' ? 'Active' : 'Inactive',
                     TotalCalls: userCalls.length,
                     SuccessfulCalls: successful,
                     SuccessRate: successRate + '%',
-                    LastActive: volunteer.lastLogin ? formatDate(volunteer.lastLogin) : 'Never'
+                    LastActive: volunteer.last_sign_in_at ? formatDate(volunteer.last_sign_in_at) : 'Never'
                 };
             });
             exportToCSV(report, 'team-report.csv');
@@ -3338,9 +3565,19 @@ Thank you so much for your time today, [Contact Name]. We really appreciate your
         }
 
         // Initialize on page load
-        window.addEventListener('DOMContentLoaded', function() {
+        window.addEventListener('DOMContentLoaded', async function() {
             initializeDemoData();
-            
+            try {
+                const { data: { user } } = await db.auth.getUser();
+                if (user) {
+                    isOnline = true;
+                    currentUser = user;
+                    await showDashboard();
+                }
+            } catch (error) {
+                // Offline
+            }
+
             // Check for saved theme
             const savedTheme = localStorage.getItem('vcm_theme');
             if (savedTheme) {
@@ -3348,18 +3585,6 @@ Thank you so much for your time today, [Contact Name]. We really appreciate your
                 const themeToggle = document.querySelector('.theme-toggle');
                 if (themeToggle) {
                     themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-                }
-            }
-            
-            // Check for existing session
-            const savedUser = localStorage.getItem('vcm_currentUser');
-            if (savedUser) {
-                currentUser = JSON.parse(savedUser);
-                // Verify user still exists
-                if (users.find(u => u.id === currentUser.id)) {
-                    showDashboard();
-                } else {
-                    localStorage.removeItem('vcm_currentUser');
                 }
             }
             
